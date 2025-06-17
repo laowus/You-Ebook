@@ -75,10 +75,14 @@ export const useBookStore = defineStore(
               }
               this.toc.push(item);
             }
+            // 发送插入成功事件
+            EventBus.emit("addChapter-success", res);
             // 发送更新目录事件
             EventBus.emit("updateToc", item.href);
           } else {
             console.error("插入章节数据失败:", res.message);
+            // 发送插入失败事件
+            EventBus.emit("addChapter-fail", res.message);
           }
         });
         ipcRenderer.send("db-insert-chapter", tocItem);

@@ -129,13 +129,63 @@ const regString = () => {
     chapterRegex
   );
   console.log(chapters);
-  // 
-
+  //插入数据库中.. 更新toc
+  insertChapters(chapters, curChapter.value.id);
   // // chapters.value = chapters;
   // curChapter.value = chapters.value[0];
 };
+const iCTip = (text) => {
+  EventBus.emit("showTip", text);
+};
+const insertChapters = async (chapters, id) => {
+  const insertSingleChapter = (chapterData) => {
+    return new Promise((resolve, reject) => {
+      // 定义成功监听器
+      const successListener = (res) => {
+        // 移除监听器
+        EventBus.off("addChapter-success", successListener);
+        EventBus.off("addChapter-fail", failListener);
+        resolve(res);
+      };
 
+      // 定义失败监听器
+      const failListener = (error) => {
+        // 移除监听器
+        EventBus.off("addChapter-success", successListener);
+        EventBus.off("addChapter-fail", failListener);
+        reject(error);
+      };
 
+      // 监听成功和失败事件
+      EventBus.on("addChapter-success", successListener);
+      EventBus.on("addChapter-fail", failListener);
+
+      // 触发添加章节事件
+      EventBus.emit("addChapter", {
+        href: id,
+        chapter: chapterData,
+      });
+    });
+  };
+
+  for (const [index, chap] of chapters.entries()) {
+    const chapter = {
+      bookId: metaData.value.bookId,
+      label: chap.label,
+      href: `OPS/chapter-${Date.now()}`,
+      content: chap.content,
+    };
+    iCTip("导入" + chap.label + "中 ..." + (index + 1) + "/" + chapters.length);
+    try {
+      // 等待当前章节插入完成
+      await insertSingleChapter(chapter);
+      console.log(`章节 ${chap.label} 导入成功`);
+    } catch (error) {
+      ElMessage.error(`导入 ${chap.label} 失败: ${error}`);
+    }
+  }
+  EventBus.emit("hideTip");
+};
 </script>
 <template>
   <div class="header">

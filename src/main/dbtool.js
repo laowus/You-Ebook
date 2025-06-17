@@ -151,6 +151,7 @@ const insertChapter = (chapter, event) => {
         event.reply("db-insert-chapter-response", {
           success: true,
           id: this.lastID,
+          uid: chapter.uid,
         }); // 发送成功响应
       }
     }
