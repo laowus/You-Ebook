@@ -1,0 +1,7 @@
+.icon-return {
+  cursor: pointer;
+}
+
+*:focus {
+  outline: none;
+}

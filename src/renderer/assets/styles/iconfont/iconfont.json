@@ -1,0 +1,149 @@
+{
+  "id": "4898766",
+  "name": "txt2epub",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "1463371",
+      "name": "上一级",
+      "font_class": "shangyiji",
+      "unicode": "e691",
+      "unicode_decimal": 59025
+    },
+    {
+      "icon_id": "19783073",
+      "name": "下一级",
+      "font_class": "xiayiji",
+      "unicode": "e603",
+      "unicode_decimal": 58883
+    },
+    {
+      "icon_id": "826149",
+      "name": "上移",
+      "font_class": "shangyi",
+      "unicode": "e62b",
+      "unicode_decimal": 58923
+    },
+    {
+      "icon_id": "826164",
+      "name": "下移",
+      "font_class": "xiayi",
+      "unicode": "e639",
+      "unicode_decimal": 58937
+    },
+    {
+      "icon_id": "1305475",
+      "name": "历史记录",
+      "font_class": "lishijilu",
+      "unicode": "e63f",
+      "unicode_decimal": 58943
+    },
+    {
+      "icon_id": "4392703",
+      "name": "修改",
+      "font_class": "xiugai",
+      "unicode": "e601",
+      "unicode_decimal": 58881
+    },
+    {
+      "icon_id": "925488",
+      "name": "取消",
+      "font_class": "quxiao",
+      "unicode": "e64f",
+      "unicode_decimal": 58959
+    },
+    {
+      "icon_id": "9974768",
+      "name": "确定",
+      "font_class": "queding",
+      "unicode": "e714",
+      "unicode_decimal": 59156
+    },
+    {
+      "icon_id": "844037",
+      "name": "导出exl",
+      "font_class": "daochuexl",
+      "unicode": "e667",
+      "unicode_decimal": 58983
+    },
+    {
+      "icon_id": "30214677",
+      "name": "导出txt",
+      "font_class": "daochutxt",
+      "unicode": "e6d4",
+      "unicode_decimal": 59092
+    },
+    {
+      "icon_id": "11179874",
+      "name": "首行缩进",
+      "font_class": "shouhangsuojin",
+      "unicode": "e602",
+      "unicode_decimal": 58882
+    },
+    {
+      "icon_id": "21211560",
+      "name": "删除空行",
+      "font_class": "shanchukonghang",
+      "unicode": "e705",
+      "unicode_decimal": 59141
+    },
+    {
+      "icon_id": "1117",
+      "name": "剪切",
+      "font_class": "jianqie",
+      "unicode": "e600",
+      "unicode_decimal": 58880
+    },
+    {
+      "icon_id": "4942640",
+      "name": "关闭",
+      "font_class": "guanbi",
+      "unicode": "e611",
+      "unicode_decimal": 58897
+    },
+    {
+      "icon_id": "11490918",
+      "name": "最小化",
+      "font_class": "zuixiaohua",
+      "unicode": "e650",
+      "unicode_decimal": 58960
+    },
+    {
+      "icon_id": "14421618",
+      "name": "最大化",
+      "font_class": "zuidahua_huaban1",
+      "unicode": "e673",
+      "unicode_decimal": 58995
+    },
+    {
+      "icon_id": "1649535",
+      "name": "新建",
+      "font_class": "xinjian",
+      "unicode": "e67c",
+      "unicode_decimal": 59004
+    },
+    {
+      "icon_id": "23894964",
+      "name": "加入",
+      "font_class": "jiaru",
+      "unicode": "e7c4",
+      "unicode_decimal": 59332
+    },
+    {
+      "icon_id": "1453460",
+      "name": "txt",
+      "font_class": "txt",
+      "unicode": "e60d",
+      "unicode_decimal": 58893
+    },
+    {
+      "icon_id": "2454405",
+      "name": "Epub",
+      "font_class": "Epub",
+      "unicode": "e61d",
+      "unicode_decimal": 58909
+    }
+  ]
+}
