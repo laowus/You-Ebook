@@ -52,7 +52,7 @@ export const useBookStore = defineStore(
       },
       // 插入数据库中 并更新目录以及当前章节
       addTocByHref(href, tocItem) {
-        console.log("addTocByHref", href, tocItem);
+        //console.log("addTocByHref", href, tocItem);
         ipcRenderer.once("db-insert-chapter-response", (event, res) => {
           if (res.success) {
             const item = {
@@ -63,7 +63,7 @@ export const useBookStore = defineStore(
             if (href) {
               //获取要插入的父级元素
               const parentItem = this.findTocByHref(href);
-              console.log("findTocByHref", parentItem);
+              //console.log("findTocByHref", parentItem);
               if (parentItem.subitems) {
                 parentItem.subitems.push(item);
               } else {
@@ -76,13 +76,11 @@ export const useBookStore = defineStore(
               this.toc.push(item);
             }
             // 发送插入成功事件
-            EventBus.emit("addChapter-success", res);
+            EventBus.emit("addChapterRes", res);
             // 发送更新目录事件
             EventBus.emit("updateToc", item.href);
           } else {
             console.error("插入章节数据失败:", res.message);
-            // 发送插入失败事件
-            EventBus.emit("addChapter-fail", res.message);
           }
         });
         ipcRenderer.send("db-insert-chapter", tocItem);

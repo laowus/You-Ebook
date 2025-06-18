@@ -80,7 +80,7 @@ export const open = async (file) => {
         bookId = res.bookId;
         setMetaData({ ..._metaData, bookId: bookId });
         insertChapter(book, bookId).then(() => {
-          setToc(book.toc);
+          //setToc(book.toc);
           setFirst(false);
           const firstChapter = ipcRenderer.sendSync("db-first-chapter", bookId);
           console.log("const open firstChapter", firstChapter.data);
@@ -93,9 +93,9 @@ export const open = async (file) => {
       const bookId = metaData.value.bookId;
       insertChapter(book, bookId).then(() => {
         EventBus.emit("hideTip");
-        const newToc = [...toRaw(toc.value), ...book.toc];
+        // const newToc = [...toRaw(toc.value), ...book.toc];
         console.log("book.toc", book.toc);
-        setToc(newToc);
+        //setToc(newToc);
         EventBus.emit("updateToc", book.toc[0].href);
       });
     }
@@ -116,33 +116,35 @@ const iCTip = (text) => {
 // 插入章节以及内容加入数据库
 const insertChapter = async (book, bookId) => {
   // [href, content]
-  const insertTocItem = async (item) => {
+  const insertTocItem = async (item, parentid = null) => {
+    console.log(item.label, "的父元素", parentid);
     const res = await book.resolveHref(item.href);
     // 等待 createDocument 完成
     const doc = await book.sections[res.index].createDocument();
     const str = getTextFromHTML(doc.documentElement.outerHTML);
     // 封装发送请求和监听响应为一个 Promise
     await new Promise((resolve, reject) => {
-      ipcRenderer.once("db-insert-chapter-response", (event, response) => {
-        if (response.success) {
-          item.href = response.id;
-          resolve();
-        } else {
-          reject(new Error(`插入失败: ${response.message}`));
-        }
-      });
-      // 发送插入请求
-      ipcRenderer.send("db-insert-chapter", {
+      const successListener = (res) => {
+        item.href = res.id;
+        resolve(res);
+      };
+      EventBus.on("addChapterRes", successListener);
+      const chapterData = {
         label: item.label,
         href: item.href,
         content: str,
         bookId: bookId,
+      };
+      EventBus.emit("addChapter", {
+        href: parentid,
+        chapter: chapterData,
       });
     });
 
     if (item.subitems) {
+      parentid = item.href;
       for (const subitem of item.subitems) {
-        await insertTocItem(subitem);
+        await insertTocItem(subitem, parentid);
       }
     }
   };
@@ -151,6 +153,6 @@ const insertChapter = async (book, bookId) => {
     iCTip(
       "导入" + tocItem.label + "中 ..." + (index + 1) + "/" + book.toc.length
     );
-    await insertTocItem(tocItem);
+    await insertTocItem(tocItem, null);
   }
 };

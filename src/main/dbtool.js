@@ -150,8 +150,7 @@ const insertChapter = (chapter, event) => {
         console.log("db-insert-chapter-response id:", this.lastID);
         event.reply("db-insert-chapter-response", {
           success: true,
-          id: this.lastID,
-          uid: chapter.uid,
+          id: this.lastID
         }); // 发送成功响应
       }
     }
