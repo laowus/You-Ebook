@@ -1,50 +1,38 @@
-import JSZip from "jszip";
-export const getChapters = (content, title, chapterRegex) => {
-  const chapters = [];
-  let lastIndex = 0;
-  let match;
-  let chapterIndex = 0; // 初始化章节索引
-  while ((match = chapterRegex.exec(content)) !== null) {
-    if (chapters.length > 0) {
-      const prevChapterEnd = match.index;
-      let chapterContent = content.slice(lastIndex, prevChapterEnd);
-      // 去除首行的 \n
-      chapterContent = chapterContent.replace(/^\n/, "");
-      if (chapterContent === "") {
-        chapters.pop();
-        chapterIndex--;
-        continue;
-      }
-      chapters[chapters.length - 1].content += chapterContent;
-    }
+const JSZip = require("jszip");
 
-    const trimmedTitle = match[0].trim();
-    chapters.push({
-      index: chapterIndex,
-      label: trimmedTitle,
-      content: "",
-    });
-    chapterIndex++; // 索引自增
-    lastIndex = match.index + match[0].length;
-  }
-  if (chapters.length > 0) {
-    let lastChapterContent = content.slice(lastIndex);
-    // 去除首行的 \n
-    lastChapterContent = lastChapterContent.replace(/^\n/, "");
-    chapters[chapters.length - 1].content += lastChapterContent;
-  } else {
-    // 去除首行的 \n
-    content = content.replace(/^\n/, "");
-    chapters.push({
-      index: 0, // 添加 index 属性
-      label: title,
-      content: content,
-    });
-  }
-  return chapters;
+// 递归生成 navPoints 的函数
+const generateNavPoints = (chapters, parentPlayOrder = 1) => {
+  let currentPlayOrder = parentPlayOrder;
+  return chapters.map((chapter, index) => {
+    const id = `chapter${currentPlayOrder}`;
+    const playOrder = currentPlayOrder++;
+    let navPoint = `<navPoint id="navPoint-${id}" playOrder="${playOrder}">
+                  <navLabel>
+                    <text>${chapter.label}</text>
+                  </navLabel>
+                  <content src="./OEBPS/${id}.xhtml" />`;
+    if (chapter.subitems && chapter.subitems.length > 0) {
+      const subNavPoints = generateNavPoints(
+        chapter.subitems,
+        currentPlayOrder
+      );
+      currentPlayOrder += subNavPoints.length;
+      navPoint += subNavPoints.join("\n");
+    }
+    navPoint += `</navPoint>`;
+    return navPoint.trim();
+  });
 };
-// toc
-export const createEpub = async (chapters, metadata) => {
+
+// 扁平化章节列表的函数
+const flattenChapters = (chapters) => {
+  return chapters.flatMap((chapter) => [
+    chapter,
+    ...(chapter.subitems ? flattenChapters(chapter.subitems) : []),
+  ]);
+};
+
+const createEpub = async (chapters, metadata) => {
   return new Promise((resolve, reject) => {
     try {
       const { author, title } = metadata;
@@ -60,21 +48,10 @@ export const createEpub = async (chapters, metadata) => {
             </container>`.trim()
       );
 
-      const navPoints = chapters
-        .map((chapter, index) => {
-          const id = `chapter${index + 1}`;
-          const playOrder = index + 2; // 封页的 playOrder 为 1
-          return `<navPoint id="navPoint-${id}" playOrder="${playOrder}">
-                  <navLabel>
-                    <text>${chapter.title}</text>
-                  </navLabel>
-                  <content src="./OEBPS/${id}.xhtml" />
-                </navPoint>
-              `.trim();
-        })
-        .join("\n");
+      // 调用递归函数生成 navPoints
+      const navPoints = generateNavPoints(chapters).join("\n");
 
-      //目录页面
+      // 目录页面
       zip.folder("").file(
         "toc.ncx",
         ` <?xml version="1.0" encoding="UTF-8"?>
@@ -96,8 +73,12 @@ export const createEpub = async (chapters, metadata) => {
                 </navMap>
             </ncx>`.trim()
       );
-      // Add OEBPS/content.opf
-      const manifest = chapters
+
+      // 扁平化章节列表
+      const flatChapters = flattenChapters(chapters);
+
+      // 生成 manifest
+      const manifest = flatChapters
         .map(
           (_, index) => `
         <item id="chap${index + 1}" href="OEBPS/chapter${
@@ -107,15 +88,20 @@ export const createEpub = async (chapters, metadata) => {
         )
         .join("")
         .trim();
-      let spine = chapters
+
+      // 生成 spine
+      const spine = flatChapters
         .map(
           (_, index) => `
         <itemref idref="chap${index + 1}"/>`
         )
         .join("")
         .trim();
-      //生成内容页面
-      chapters.forEach((chapter, index) => {
+
+      // 生成内容页面
+      flatChapters.forEach((chapter, index) => {
+        // 这里假设 chapter.content 存在，实际使用时可能需要根据情况调整
+        const content = chapter.content || "";
         zip.folder("OEBPS").file(
           `chapter${index + 1}.xhtml`,
           `
@@ -123,18 +109,21 @@ export const createEpub = async (chapters, metadata) => {
                 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
                 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
                   <head>
-                    <title>${chapter.title}</title>
+                    <title>${chapter.label}</title>
                     <link rel="stylesheet" type="text/css" href="../style.css"/>
                   </head>
                   <body>
-                  <h1>${chapter.title}</h1>
-                  ${chapter.content}
+                  <h1>${chapter.label}</h1>
+                  ${content}
                   </body>
                 </html>
               `.trim()
         );
       });
+
       const tocManifest = `<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`;
+
+      // 生成 content.opf
       zip.folder("").file(
         "content.opf",
         `
@@ -171,4 +160,7 @@ export const createEpub = async (chapters, metadata) => {
       reject(err);
     }
   });
+};
+module.exports = {
+  createEpub,
 };

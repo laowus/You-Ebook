@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const Store = require("electron-store");
 const store = new Store();
+const { createEpub } = require("./createEpub");
 const { initDatabase } = require("./dbtool");
 let resourcesRoot = path.resolve(app.getAppPath());
 let publicRoot = path.join(__dirname, "../../public");
@@ -179,6 +180,42 @@ const initWindowBounds = (win) => {
   store.get("mainWindowX") || store.set("mainWindowX", win.getPosition()[0]);
   store.get("mainWindowY") || store.set("mainWindowY", win.getPosition()[1]);
 };
+
+ipcMain.handle("export-epub", async (event, { chapters, metaData }) => {
+  try {
+    // console.log(chapters, metadata);
+    // const newChapter = chapters2Html(chapters);
+    // 弹出保存对话框
+    console.log("metaData", metaData);
+    const { filePath } = await dialog.showSaveDialog({
+      title: "保存 EPUB 文件",
+      defaultPath: `${metaData.title}.epub`,
+      filters: [
+        { name: "EPUB 文件", extensions: ["epub"] },
+        { name: "所有文件", extensions: ["*"] },
+      ],
+    });
+
+    if (!filePath) {
+      return { success: false, message: "用户取消保存" };
+    }
+
+    await createEpub(chapters, metaData).then((epubContent) => {
+      console.log("导出文件目录", filePath);
+      fs.writeFile(filePath, epubContent, (err) => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log("文件写入成功");
+        }
+      });
+    });
+    return { success: true, filePath };
+  } catch (error) {
+    console.error("导出 EPUB 失败:", error);
+    return { success: false, message: error.message };
+  }
+});
 
 const init = () => {
   app.whenReady().then(async () => {

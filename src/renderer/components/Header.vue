@@ -9,9 +9,9 @@ import { open } from "../libs/parseBook.js";
 import { parseFile, readTxtFile, getTextFromHTML } from "../common/utils";
 import { useBookStore } from "../store/bookStore";
 import { useAppStore } from "../store/appStore";
-
+import { createEpub } from "../libs/createEpub.js";
 const { ipcRenderer } = window.require("electron");
-const { curChapter, metaData, isFirst } = storeToRefs(useBookStore());
+const { curChapter, metaData, isFirst, toc } = storeToRefs(useBookStore());
 const { setMetaData, setFirst } = useBookStore();
 const { showHistoryView, showNewBook } = useAppStore();
 
@@ -123,12 +123,21 @@ const regString = () => {
   console.log(chapterRegex);
 
   // 分割字符串
+
+  const tempChapter = {
+    bookId: curChapter.value.bookId,
+    href: curChapter.value.href,
+    content: curChapter.value.label,
+    label: curChapter.value.label,
+  };
   const chapters = getChapters(
     curChapter.value.content,
     curChapter.value.title,
     chapterRegex
   );
-  insertChapters(chapters, curChapter.value.id);
+  insertChapters(chapters, curChapter.value.id).then(
+    ipcRenderer.send("db-update-chapter", tempChapter)
+  );
 };
 const iCTip = (text) => {
   EventBus.emit("showTip", text);
@@ -159,6 +168,21 @@ const insertChapters = async (chapters, id) => {
     await insertSingleChapter(chapter);
   }
   EventBus.emit("hideTip");
+};
+
+const exportEpub = async () => {
+  console.log(toRaw(toc.value), toRaw(metaData.value), "导出 epub");
+  ipcRenderer
+    .invoke("export-epub", {
+      chapters: toRaw(toc.value),
+      metaData: toRaw(metaData.value),
+    })
+    .then((result) => {
+      ElMessage.success(`导出${metaData.value.title}成功!`);
+    })
+    .catch((error) => {
+      ElMessage.error(`导出${metaData.value.title}失败，请重试!`);
+    });
 };
 </script>
 <template>
@@ -283,7 +307,7 @@ const insertChapters = async (chapters, id) => {
           </div>
         </div>
         <div v-show="curIndex === 4">
-          <button class="btn-icon" @click="">
+          <button class="btn-icon" @click="exportEpub">
             <span class="iconfont icon-daochuexl" style="color: green"></span>
             <span>生成epub</span>
           </button>
