@@ -197,6 +197,20 @@ const exportTxt = async () => {
       ElMessage.error(`导出${metaData.value.title}失败，请重试!`);
     });
 };
+const exportHtml = async () => {
+  console.log(toRaw(toc.value), toRaw(metaData.value), "导出 Html");
+  ipcRenderer
+    .invoke("export-html", {
+      chapters: toRaw(toc.value),
+      metaData: toRaw(metaData.value),
+    })
+    .then((result) => {
+      ElMessage.success(`导出${metaData.value.title}成功!`);
+    })
+    .catch((error) => {
+      ElMessage.error(`导出${metaData.value.title}失败，请重试!`);
+    });
+};
 </script>
 <template>
   <div class="header">
@@ -347,6 +361,14 @@ const exportTxt = async () => {
           >
             <span class="iconfont icon-daochutxt" style="color: green"></span>
             <span>生成txt</span>
+          </button>
+          <button
+            class="btn-icon"
+            @click="exportHtml"
+            :disabled="!curChapter.bookId"
+          >
+            <span class="iconfont icon-HTML" style="color: green"></span>
+            <span>生成Html</span>
           </button>
         </div>
       </div>

@@ -251,6 +251,65 @@ ipcMain.handle("export-txt", async (event, { chapters, metaData }) => {
   }
 });
 
+const txtToHtmlString = (txt, title) => {
+  // 先按两个及以上换行符分割成段落
+  const paragraphs = txt.split(/\n{2,}/);
+  // 对每个段落处理，将单个换行符替换为 <br> 标签
+  const htmlParagraphs = paragraphs.map((paragraph) => {
+    const lines = paragraph.split("\n");
+    return `<p>${lines.join("<br>")}</p>`;
+  });
+  // 合并所有段落
+  const bodyContent = htmlParagraphs.join("");
+  // 包裹完整的 HTML 结构
+  return `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+</head>
+<body>
+  ${bodyContent}
+</body>
+</html>
+`.trim();
+};
+
+ipcMain.handle("export-html", async (event, { chapters, metaData }) => {
+  try {
+    // 弹出保存对话框
+    const { filePath } = await dialog.showSaveDialog({
+      title: "保存 Html 文件",
+      defaultPath: `${metaData.title}.html`,
+      filters: [
+        { name: "Txt 文件", extensions: ["html"] },
+        { name: "所有文件", extensions: ["*"] },
+      ],
+    });
+
+    if (!filePath) {
+      return { success: false, message: "用户取消保存" };
+    }
+
+    await createTxt(chapters, metaData).then((txtContent) => {
+      console.log("导出文件目录", filePath, txtContent);
+      txtContent = txtToHtmlString(txtContent, metaData.title);
+      fs.writeFile(filePath, txtContent, (err) => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log("文件写入成功");
+        }
+      });
+    });
+    return { success: true, filePath };
+  } catch (error) {
+    console.error("导出 TXT 失败:", error);
+    return { success: false, message: error.message };
+  }
+});
 const init = () => {
   app.whenReady().then(async () => {
     await initDatabase();
