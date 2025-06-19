@@ -1,5 +1,5 @@
 const JSZip = require("jszip");
-
+const { getChap } = require("./dbtool");
 // 递归生成 navPoints 的函数
 const generateNavPoints = (chapters, parentPlayOrder = 1) => {
   let currentPlayOrder = parentPlayOrder;
@@ -30,6 +30,21 @@ const flattenChapters = (chapters) => {
     chapter,
     ...(chapter.subitems ? flattenChapters(chapter.subitems) : []),
   ]);
+};
+
+// 格式化文本，添加分段和缩进
+const formatText = (text) => {
+  const lines = text.split("\n");
+  let paragraphs = [];
+
+  for (let line of lines) {
+    line = line.trim();
+    if (line !== "") {
+      paragraphs.push(`<p>${line}</p>`);
+    }
+  }
+
+  return paragraphs.join("\n");
 };
 
 const createEpub = async (chapters, metadata) => {
@@ -99,13 +114,16 @@ const createEpub = async (chapters, metadata) => {
         .trim();
 
       // 生成内容页面
-      flatChapters.forEach((chapter, index) => {
-        // 这里假设 chapter.content 存在，实际使用时可能需要根据情况调整
-        const content = chapter.content || "";
-        zip.folder("OEBPS").file(
-          `chapter${index + 1}.xhtml`,
-          `
-                <?xml version="1.0" encoding="UTF-8"?>
+      // 将 forEach 替换为 for...of 循环
+      const addChapterFiles = async () => {
+        for (const [index, chapter] of flatChapters.entries()) {
+          // 调用 getChap 获取章节内容
+          const result = await getChap(metadata.bookId, chapter.href);
+          // 检查返回结果是否成功
+          const content = result.success ? formatText(result.data.content) : "";
+          zip.folder("OEBPS").file(
+            `chapter${index + 1}.xhtml`,
+            `<?xml version="1.0" encoding="UTF-8"?>
                 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
                 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
                   <head>
@@ -113,20 +131,23 @@ const createEpub = async (chapters, metadata) => {
                     <link rel="stylesheet" type="text/css" href="../style.css"/>
                   </head>
                   <body>
-                  <h1>${chapter.label}</h1>
                   ${content}
                   </body>
                 </html>
               `.trim()
-        );
-      });
+          );
+        }
+      };
 
-      const tocManifest = `<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`;
+      // 等待所有章节文件添加完成
+      addChapterFiles()
+        .then(() => {
+          const tocManifest = `<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`;
 
-      // 生成 content.opf
-      zip.folder("").file(
-        "content.opf",
-        `
+          // 生成 content.opf
+          zip.folder("").file(
+            "content.opf",
+            `
             <?xml version="1.0" encoding="UTF-8"?>
             <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="book-id" version="2.0">
               <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -144,15 +165,20 @@ const createEpub = async (chapters, metadata) => {
               </spine>
             </package>
           `.trim()
-      );
+          );
 
-      zip
-        .generateAsync({ type: "nodebuffer" })
-        .then((epubContent) => {
-          resolve(epubContent);
+          zip
+            .generateAsync({ type: "nodebuffer" })
+            .then((epubContent) => {
+              resolve(epubContent);
+            })
+            .catch((err) => {
+              console.error("转换过程中出现错误:", err);
+              reject(err);
+            });
         })
         .catch((err) => {
-          console.error("转换过程中出现错误:", err);
+          console.error("添加章节文件时出现错误:", err);
           reject(err);
         });
     } catch (err) {

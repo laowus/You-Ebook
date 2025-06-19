@@ -150,7 +150,7 @@ const insertChapter = (chapter, event) => {
         console.log("db-insert-chapter-response id:", this.lastID);
         event.reply("db-insert-chapter-response", {
           success: true,
-          id: this.lastID
+          id: this.lastID,
         }); // 发送成功响应
       }
     }
@@ -203,6 +203,24 @@ const getChapter = (bookId, href, event) => {
   );
 };
 
+const getChap = (bookId, href) => {
+  console.log("getChap", bookId, href);
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT * FROM ee_chapter WHERE bookId =? AND id =? `,
+      [bookId, href],
+      (err, rows) => {
+        if (err) {
+          console.error(err.message);
+          reject({ success: false });
+        } else {
+          resolve({ success: true, data: rows });
+        }
+      }
+    );
+  });
+};
+
 const updateChapter = (chapter, event) => {
   db.run(
     `UPDATE ee_chapter SET content = ?,label =?, updateTime = datetime('now') WHERE bookId = ? AND href = ?`,
@@ -242,6 +260,7 @@ module.exports = {
   insertChapter,
   getFirstChapter,
   getChapter,
+  getChap,
   updateChapter,
   updateToc,
 };
