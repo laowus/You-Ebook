@@ -2,6 +2,8 @@ const { ipcMain } = require("electron");
 const {
   insertBook,
   getBooks,
+  delBook,
+  getBook,
   insertChapter,
   getFirstChapter,
   getChapter,
@@ -17,6 +19,12 @@ const dbHandle = () => {
   });
   ipcMain.on("db-get-books", (event) => {
     getBooks(event);
+  });
+  ipcMain.on("db-del-book", (event, bookId) => {
+    delBook(event, bookId);
+  });
+  ipcMain.on("db-get-book", (event, bookId) => {
+    getBook(event, bookId);
   });
   ipcMain.on("db-update-toc", (event, book) => {
     updateToc(book, event);

@@ -9,7 +9,6 @@ import { open } from "../libs/parseBook.js";
 import { parseFile, readTxtFile, getTextFromHTML } from "../common/utils";
 import { useBookStore } from "../store/bookStore";
 import { useAppStore } from "../store/appStore";
-import { createEpub } from "../libs/createEpub.js";
 const { ipcRenderer } = window.require("electron");
 const { curChapter, metaData, isFirst, toc } = storeToRefs(useBookStore());
 const { setMetaData, setFirst } = useBookStore();
@@ -123,7 +122,6 @@ const regString = () => {
   console.log(chapterRegex);
 
   // 分割字符串
-
   const tempChapter = {
     bookId: curChapter.value.bookId,
     href: curChapter.value.href,
@@ -185,7 +183,20 @@ const exportEpub = async () => {
     });
 };
 
-
+const exportTxt = async () => {
+  console.log(toRaw(toc.value), toRaw(metaData.value), "导出 Txt");
+  ipcRenderer
+    .invoke("export-txt", {
+      chapters: toRaw(toc.value),
+      metaData: toRaw(metaData.value),
+    })
+    .then((result) => {
+      ElMessage.success(`导出${metaData.value.title}成功!`);
+    })
+    .catch((error) => {
+      ElMessage.error(`导出${metaData.value.title}失败，请重试!`);
+    });
+};
 </script>
 <template>
   <div class="header">
@@ -253,7 +264,11 @@ const exportEpub = async () => {
           </button>
         </div>
         <div v-show="curIndex === 2">
-          <button class="btn-icon" @click="deleteEmptyLines">
+          <button
+            class="btn-icon"
+            @click="deleteEmptyLines"
+            :disabled="!curChapter.bookId"
+          >
             <span
               class="iconfont icon-shanchukonghang"
               style="color: red"
@@ -268,7 +283,11 @@ const exportEpub = async () => {
               {{ index }}
             </option>
           </select>
-          <button class="btn-icon" @click="indentFirstLine">
+          <button
+            class="btn-icon"
+            @click="indentFirstLine"
+            :disabled="!curChapter.bookId"
+          >
             <span
               class="iconfont icon-shouhangsuojin"
               style="color: green"
@@ -302,18 +321,30 @@ const exportEpub = async () => {
               style="width: 150px; height: 20px; font-size: 12px"
               placeholder="多个用|分开"
             />
-            <button class="btn-icon" @click="regString">
+            <button
+              class="btn-icon"
+              @click="regString"
+              :disabled="!curChapter.bookId"
+            >
               <span class="iconfont icon-jianqie" style="color: green"></span>
               <span>开始分割</span>
             </button>
           </div>
         </div>
         <div v-show="curIndex === 4">
-          <button class="btn-icon" @click="exportEpub">
+          <button
+            class="btn-icon"
+            @click="exportEpub"
+            :disabled="!curChapter.bookId"
+          >
             <span class="iconfont icon-daochuexl" style="color: green"></span>
             <span>生成epub</span>
           </button>
-          <button class="btn-icon" @click="" disabled>
+          <button
+            class="btn-icon"
+            @click="exportTxt"
+            :disabled="!curChapter.bookId"
+          >
             <span class="iconfont icon-daochutxt" style="color: green"></span>
             <span>生成txt</span>
           </button>

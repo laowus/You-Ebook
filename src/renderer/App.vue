@@ -16,6 +16,7 @@ const { hideEditView, hideCtxMenu } = useAppStore();
 let tocView;
 
 //重新布局目录
+// 如果curhref 为空 就获取curhref 第一个
 const updateTocView = (curhref) => {
   console.log("重新布局目录updateTocView", toRaw(toc.value));
   const _book = {
@@ -72,8 +73,12 @@ const updateCurChapter = (href) => {
 
 //更新目录，重新载入编辑内容
 EventBus.on("updateToc", (href) => {
-  console.log("EventBus.onupdateToc", href);
-  updateTocView(href);
+  if (href) {
+    updateTocView(href);
+  } else {
+    const tocViewElement = window.$("#toc-view");
+    tocViewElement.innerHTML = "";
+  }
 });
 
 onMounted(() => {

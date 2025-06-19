@@ -7,6 +7,7 @@ const fs = require("fs");
 const Store = require("electron-store");
 const store = new Store();
 const { createEpub } = require("./createEpub");
+const { createTxt } = require("./createTxt");
 const { initDatabase } = require("./dbtool");
 let resourcesRoot = path.resolve(app.getAppPath());
 let publicRoot = path.join(__dirname, "../../public");
@@ -213,6 +214,39 @@ ipcMain.handle("export-epub", async (event, { chapters, metaData }) => {
     return { success: true, filePath };
   } catch (error) {
     console.error("导出 EPUB 失败:", error);
+    return { success: false, message: error.message };
+  }
+});
+
+ipcMain.handle("export-txt", async (event, { chapters, metaData }) => {
+  try {
+    // 弹出保存对话框
+    const { filePath } = await dialog.showSaveDialog({
+      title: "保存 Txt 文件",
+      defaultPath: `${metaData.title}.txt`,
+      filters: [
+        { name: "Txt 文件", extensions: ["txt"] },
+        { name: "所有文件", extensions: ["*"] },
+      ],
+    });
+
+    if (!filePath) {
+      return { success: false, message: "用户取消保存" };
+    }
+
+    await createTxt(chapters, metaData).then((txtContent) => {
+      console.log("导出文件目录", filePath, txtContent);
+      fs.writeFile(filePath, txtContent, (err) => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log("文件写入成功");
+        }
+      });
+    });
+    return { success: true, filePath };
+  } catch (error) {
+    console.error("导出 TXT 失败:", error);
     return { success: false, message: error.message };
   }
 });

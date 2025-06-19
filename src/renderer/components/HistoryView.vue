@@ -48,24 +48,38 @@ const importBook = (index, row) => {
   EventBus.emit("updateToc", firstChapter.data.id);
   hideHistoryView();
 };
+
+const delBook = (row) => {
+  console.log(row);
+  // 删除成功后刷新数据
+  ipcRenderer.once("db-del-book-response", (event, response) => {
+    if (response.success) {
+      fetchBooks();
+    }
+  });
+  ipcRenderer.send("db-del-book", row.id);
+};
 </script>
 <template>
   <el-dialog v-model="historyViewShow" title="历史记录" width="80%">
     <el-table :data="books">
       <el-table-column property="id" label="id" width="50" />
-      <el-table-column property="title" label="书名" width="100" />
-      <el-table-column property="author" label="作者" width="200" />
+      <el-table-column property="title" label="书名" width="150" />
+      <el-table-column property="author" label="作者" width="100" />
       <el-table-column property="createTime" label="创建时间" width="100" />
-      <el-table-column fixed="right" label="操作" min-width="120">
+      <el-table-column fixed="right" label="操作" min-width="200">
         <template #default="scope">
           <el-button
-            link
             type="primary"
             size="small"
             @click="importBook(scope.$index, scope.row)"
           >
             载入
           </el-button>
+          <el-button type="danger" size="small" @click="delBook(scope.row)"
+            >删除</el-button
+          >
+          <el-button type="warning" size="small">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>

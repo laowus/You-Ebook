@@ -4,7 +4,7 @@ const { getChap } = require("./dbtool");
 const generateNavPoints = (chapters, parentPlayOrder = 1) => {
   let currentPlayOrder = parentPlayOrder;
   return chapters.map((chapter, index) => {
-    const id = `chapter${currentPlayOrder}`;
+    const id = `chapter${chapter.href}`;
     const playOrder = currentPlayOrder++;
     let navPoint = `<navPoint id="navPoint-${id}" playOrder="${playOrder}">
                   <navLabel>
@@ -95,10 +95,8 @@ const createEpub = async (chapters, metadata) => {
       // 生成 manifest
       const manifest = flatChapters
         .map(
-          (_, index) => `
-        <item id="chap${index + 1}" href="OEBPS/chapter${
-            index + 1
-          }.xhtml" media-type="application/xhtml+xml"/>
+          (chapter, index) => `
+        <item id="chap${chapter.href}" href="OEBPS/chapter${chapter.href}.xhtml" media-type="application/xhtml+xml"/>
     `
         )
         .join("")
@@ -107,8 +105,8 @@ const createEpub = async (chapters, metadata) => {
       // 生成 spine
       const spine = flatChapters
         .map(
-          (_, index) => `
-        <itemref idref="chap${index + 1}"/>`
+          (chapter, index) => `
+        <itemref idref="chap${chapter.href}"/>`
         )
         .join("")
         .trim();
@@ -122,7 +120,7 @@ const createEpub = async (chapters, metadata) => {
           // 检查返回结果是否成功
           const content = result.success ? formatText(result.data.content) : "";
           zip.folder("OEBPS").file(
-            `chapter${index + 1}.xhtml`,
+            `chapter${chapter.href}.xhtml`,
             `<?xml version="1.0" encoding="UTF-8"?>
                 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
                 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">

@@ -75,6 +75,7 @@ const createTable = () => {
             description TEXT,
             cover TEXT,
             toc TEXT,
+            isDel INTEGER,
             createTime TEXT,
             updateTime TEXT )
     `,
@@ -106,8 +107,8 @@ const createTable = () => {
 
 const insertBook = (book, event) => {
   db.run(
-    ` INSERT INTO ee_book (title, author, description, cover,  createTime, updateTime)
-     VALUES (? , ?, ?, ?,  datetime('now'), datetime('now'))`,
+    ` INSERT INTO ee_book (title, author, description, cover, isDel, createTime, updateTime)
+     VALUES (? , ?, ?, ?, 0, datetime('now'), datetime('now'))`,
     [book.title, book.author, book.description, book.cover],
     function (err) {
       if (err) {
@@ -123,9 +124,20 @@ const insertBook = (book, event) => {
   );
 };
 
+const delBook = (event, bookId) => {
+  db.run(`UPDATE ee_book SET isDel = 1 WHERE id = ?`, [bookId], (err) => {
+    if (err) {
+      console.error(err.message);
+      event.reply("db-del-book-response", { success: false });
+    } else {
+      event.reply("db-del-book-response", { success: true });
+    }
+  });
+};
+
 const getBooks = (event) => {
   console.log("Starting getBooks query");
-  db.all(`SELECT * FROM ee_book`, (err, rows) => {
+  db.all(`SELECT * FROM ee_book WHERE isDel = 0`, (err, rows) => {
     if (err) {
       console.error("Error in getBooks query:", err.message);
       event.returnValue = { success: false, error: err.message };
@@ -255,6 +267,7 @@ const updateToc = (book, event) => {
 module.exports = {
   initDatabase,
   insertBook,
+  delBook,
   getBooks,
   getChapters,
   insertChapter,

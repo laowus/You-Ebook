@@ -35,9 +35,15 @@ export const useBookStore = defineStore(
           for (let i = items.length - 1; i >= 0; i--) {
             const item = items[i];
             if (item.href === href) {
-              const preItem = items[i - 1];
               items.splice(i, 1);
-              EventBus.emit("updateToc", preItem.href);
+              // 先尝试获取前一个元素
+              let refItem = items[i - 1];
+              // 若前一个元素不存在，尝试获取后一个元素
+              if (!refItem) {
+                refItem = items[i];
+              }
+              // 触发更新目录事件，若 refItem 不存在则传入 null
+              EventBus.emit("updateToc", refItem ? refItem.href : null);
               return true;
             }
             if (item.subitems && item.subitems.length > 0) {
