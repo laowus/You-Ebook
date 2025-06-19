@@ -182,12 +182,9 @@ const initWindowBounds = (win) => {
   store.get("mainWindowY") || store.set("mainWindowY", win.getPosition()[1]);
 };
 
-ipcMain.handle("export-epub", async (event, { chapters, metaData }) => {
+ipcMain.on("export-epub", async (event, { chapters, metaData }) => {
   try {
-    // console.log(chapters, metadata);
-    // const newChapter = chapters2Html(chapters);
     // 弹出保存对话框
-    console.log("metaData", metaData);
     const { filePath } = await dialog.showSaveDialog({
       title: "保存 EPUB 文件",
       defaultPath: `${metaData.title}.epub`,
@@ -198,27 +195,39 @@ ipcMain.handle("export-epub", async (event, { chapters, metaData }) => {
     });
 
     if (!filePath) {
-      return { success: false, message: "用户取消保存" };
-    }
-
-    await createEpub(chapters, metaData).then((epubContent) => {
-      console.log("导出文件目录", filePath);
-      fs.writeFile(filePath, epubContent, (err) => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log("文件写入成功");
-        }
+      event.sender.send("export-epub-reply", {
+        success: false,
+        message: "用户取消保存",
       });
-    });
-    return { success: true, filePath };
+    } else {
+      await createEpub(chapters, metaData, mainWin).then((epubContent) => {
+        if (mainWin && mainWin.webContents) {
+          mainWin.webContents.send("hidetip");
+        }
+        fs.writeFile(filePath, epubContent, (err) => {
+          if (err) {
+            event.sender.send("export-epub-reply", {
+              success: false,
+              message: "文件写入失败,请重试或者检查文件!",
+            });
+          } else {
+            event.sender.send("export-epub-reply", {
+              success: true,
+              message: metaData.title + ".epub 导出成功!",
+            });
+          }
+        });
+      });
+    }
   } catch (error) {
-    console.error("导出 EPUB 失败:", error);
-    return { success: false, message: error.message };
+    event.sender.send("export-epub-reply", {
+      success: false,
+      message: "文件写入失败,请重试或者检查文件!",
+    });
   }
 });
 
-ipcMain.handle("export-txt", async (event, { chapters, metaData }) => {
+ipcMain.on("export-txt", async (event, { chapters, metaData }) => {
   try {
     // 弹出保存对话框
     const { filePath } = await dialog.showSaveDialog({
@@ -231,23 +240,36 @@ ipcMain.handle("export-txt", async (event, { chapters, metaData }) => {
     });
 
     if (!filePath) {
-      return { success: false, message: "用户取消保存" };
-    }
-
-    await createTxt(chapters, metaData).then((txtContent) => {
-      console.log("导出文件目录", filePath, txtContent);
-      fs.writeFile(filePath, txtContent, (err) => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log("文件写入成功");
-        }
+      event.sender.send("export-txt-reply", {
+        success: false,
+        message: "用户取消保存",
       });
-    });
-    return { success: true, filePath };
+    } else {
+      await createTxt(chapters, metaData, mainWin).then((txtContent) => {
+        if (mainWin && mainWin.webContents) {
+          mainWin.webContents.send("hidetip");
+        }
+        fs.writeFile(filePath, txtContent, (err) => {
+          if (err) {
+            event.sender.send("export-txt-reply", {
+              success: false,
+              message: "文件写入失败,请重试或者检查文件!",
+            });
+          } else {
+            event.sender.send("export-txt-reply", {
+              success: true,
+              message: metaData.title + ".txt 导出成功!",
+            });
+          }
+        });
+      });
+      return { success: true, filePath };
+    }
   } catch (error) {
-    console.error("导出 TXT 失败:", error);
-    return { success: false, message: error.message };
+    event.sender.send("export-txt-reply", {
+      success: false,
+      message: "文件写入失败,请重试或者检查文件!",
+    });
   }
 });
 
@@ -277,37 +299,50 @@ const txtToHtmlString = (txt, title) => {
 `.trim();
 };
 
-ipcMain.handle("export-html", async (event, { chapters, metaData }) => {
+ipcMain.on("export-html", async (event, { chapters, metaData }) => {
   try {
     // 弹出保存对话框
     const { filePath } = await dialog.showSaveDialog({
       title: "保存 Html 文件",
       defaultPath: `${metaData.title}.html`,
       filters: [
-        { name: "Txt 文件", extensions: ["html"] },
+        { name: "Html 文件", extensions: ["html"] },
         { name: "所有文件", extensions: ["*"] },
       ],
     });
 
     if (!filePath) {
-      return { success: false, message: "用户取消保存" };
-    }
-
-    await createTxt(chapters, metaData).then((txtContent) => {
-      console.log("导出文件目录", filePath, txtContent);
-      txtContent = txtToHtmlString(txtContent, metaData.title);
-      fs.writeFile(filePath, txtContent, (err) => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log("文件写入成功");
-        }
+      event.sender.send("export-html-reply", {
+        success: false,
+        message: "用户取消保存",
       });
-    });
-    return { success: true, filePath };
+    } else {
+      await createTxt(chapters, metaData, mainWin).then((txtContent) => {
+        txtContent = txtToHtmlString(txtContent, metaData.title);
+        if (mainWin && mainWin.webContents) {
+          mainWin.webContents.send("hidetip");
+        }
+        fs.writeFile(filePath, txtContent, (err) => {
+          if (err) {
+            event.sender.send("export-html-reply", {
+              success: false,
+              message: "文件写入失败,请重试或者检查文件!",
+            });
+          } else {
+            event.sender.send("export-html-reply", {
+              success: true,
+              message: metaData.title + ".html 导出成功!",
+            });
+          }
+        });
+      });
+      return { success: true, filePath };
+    }
   } catch (error) {
-    console.error("导出 TXT 失败:", error);
-    return { success: false, message: error.message };
+    event.sender.send("export-html-reply", {
+      success: false,
+      message: "文件写入失败,请重试或者检查文件!",
+    });
   }
 });
 const init = () => {

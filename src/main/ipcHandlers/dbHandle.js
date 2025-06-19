@@ -14,7 +14,6 @@ const {
 
 const dbHandle = () => {
   ipcMain.on("db-insert-book", (event, book) => {
-    console.log("db-insert-book", book);
     insertBook(book, event);
   });
   ipcMain.on("db-get-books", (event) => {
@@ -43,7 +42,6 @@ const dbHandle = () => {
   });
 
   ipcMain.on("db-update-chapter", (event, chapter) => {
-    console.log("db-update-chapter", chapter);
     updateChapter(chapter, event);
   });
 };

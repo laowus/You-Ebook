@@ -1,12 +1,15 @@
+const { ipcMain } = require("electron");
 const { getChap } = require("./dbtool");
 
 // 修改 generateTxt 函数，使其返回 Promise
-const generateTxt = async (chapters, metadata) => {
+const generateTxt = async (chapters, metadata, mainWin) => {
   let localTxtContent = "";
   for (const chapter of chapters) {
     const result = await getChap(metadata.bookId, chapter.href);
-    // 打印 getChap 函数的返回结果
-    console.log("getChap result:", result);
+    // 发送进度信息给渲染进程
+    if (mainWin && mainWin.webContents) {
+      mainWin.webContents.send("showtip", chapter.label);
+    }
     const content = result.success
       ? chapter.label + "\n" + result.data.content
       : "";
@@ -18,10 +21,11 @@ const generateTxt = async (chapters, metadata) => {
       localTxtContent += subContent;
     }
   }
+  ipcMain.emit("hidetip");
   return localTxtContent;
 };
 
-const createTxt = async (chapters, metadata) => {
+const createTxt = async (chapters, metadata, mainWin) => {
   // 检查 chapters 是否为空
   if (!chapters || chapters.length === 0) {
     console.log("chapters 数组为空");
@@ -30,7 +34,7 @@ const createTxt = async (chapters, metadata) => {
 
   try {
     // 等待 generateTxt 执行完成
-    const txtContent = await generateTxt(chapters, metadata);
+    const txtContent = await generateTxt(chapters, metadata, mainWin);
     return txtContent;
   } catch (err) {
     console.error("转换过程中出现错误:", err);

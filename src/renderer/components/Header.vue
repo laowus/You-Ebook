@@ -169,47 +169,46 @@ const insertChapters = async (chapters, id) => {
 };
 
 const exportEpub = async () => {
-  console.log(toRaw(toc.value), toRaw(metaData.value), "导出 epub");
-  ipcRenderer
-    .invoke("export-epub", {
-      chapters: toRaw(toc.value),
-      metaData: toRaw(metaData.value),
-    })
-    .then((result) => {
+  ipcRenderer.once("export-epub-reply", (event, res) => {
+    if (res.success) {
       ElMessage.success(`导出${metaData.value.title}成功!`);
-    })
-    .catch((error) => {
-      ElMessage.error(`导出${metaData.value.title}失败，请重试!`);
-    });
+    } else {
+      ElMessage.error(res.message);
+    }
+  });
+  ipcRenderer.send("export-epub", {
+    chapters: toRaw(toc.value),
+    metaData: toRaw(metaData.value),
+  });
 };
 
 const exportTxt = async () => {
-  console.log(toRaw(toc.value), toRaw(metaData.value), "导出 Txt");
-  ipcRenderer
-    .invoke("export-txt", {
-      chapters: toRaw(toc.value),
-      metaData: toRaw(metaData.value),
-    })
-    .then((result) => {
+  ipcRenderer.once("export-txt-reply", (event, res) => {
+    console.log(res);
+    if (res.success) {
       ElMessage.success(`导出${metaData.value.title}成功!`);
-    })
-    .catch((error) => {
-      ElMessage.error(`导出${metaData.value.title}失败，请重试!`);
-    });
+    } else {
+      ElMessage.error(res.message);
+    }
+  });
+  ipcRenderer.send("export-txt", {
+    chapters: toRaw(toc.value),
+    metaData: toRaw(metaData.value),
+  });
 };
 const exportHtml = async () => {
-  console.log(toRaw(toc.value), toRaw(metaData.value), "导出 Html");
-  ipcRenderer
-    .invoke("export-html", {
-      chapters: toRaw(toc.value),
-      metaData: toRaw(metaData.value),
-    })
-    .then((result) => {
+  ipcRenderer.once("export-html-reply", (event, res) => {
+    console.log(res);
+    if (res.success) {
       ElMessage.success(`导出${metaData.value.title}成功!`);
-    })
-    .catch((error) => {
-      ElMessage.error(`导出${metaData.value.title}失败，请重试!`);
-    });
+    } else {
+      ElMessage.error(res.message);
+    }
+  });
+  ipcRenderer.send("export-html", {
+    chapters: toRaw(toc.value),
+    metaData: toRaw(metaData.value),
+  });
 };
 </script>
 <template>

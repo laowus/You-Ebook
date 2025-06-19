@@ -18,7 +18,7 @@ let tocView;
 //重新布局目录
 // 如果curhref 为空 就获取curhref 第一个
 const updateTocView = (curhref) => {
-  console.log("重新布局目录updateTocView", toRaw(toc.value));
+  console.log("重新Toc", toRaw(toc.value));
   const _book = {
     id: metaData.value.bookId,
     toc: toRaw(toc.value),
@@ -47,7 +47,6 @@ EventBus.on("addChapter", (res) => {
   addTocByHref(res.href, res.chapter); //添加到数据库
 });
 const showContextMenu = (event, href) => {
-  //currentHref.value = href;
   console.log("showContextMenu", href);
   event.preventDefault();
   setTimeout(() => {
@@ -59,7 +58,6 @@ const showContextMenu = (event, href) => {
 };
 //更新右边内容 href为toc里面的href 实际为数据库中的id号
 const updateCurChapter = (href) => {
-  console.log("updateCurChapter", href);
   //从数据库里面获取内容
   const chapter = ipcRenderer.sendSync(
     "db-get-chapter",

@@ -8,6 +8,7 @@ import Tip from "./Tip.vue";
 import EditView from "./EditView.vue";
 import HistoryView from "./HistoryView.vue";
 import NewBook from "./NewBook.vue";
+const { ipcRenderer } = window.require("electron");
 
 const { ctxMenuShow, ctxMenuData, ctxMenuSeparatorNums, tipShow, tipText } =
   storeToRefs(useAppStore());
@@ -66,12 +67,21 @@ EventBus.on("hideTip", () => {
   showTip("插入完成!");
   hideTip();
 });
+
+ipcRenderer.on("showtip", (event, text) => {
+  console.log("text", text);
+  showTip(text);
+});
+ipcRenderer.on("hidetip", () => {
+  showTip("插入完成!");
+  hideTip();
+});
 </script>
 <template>
   <div id="popovers">
     <HistoryView> </HistoryView>
     <EditView> </EditView>
-    <NewBook> </NewBook>
+    <NewBook :isEdit="isEdit"> </NewBook>
     <ContextMenu
       v-show="ctxMenuShow"
       :posStyle="ctxMenuPosStyle"

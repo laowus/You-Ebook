@@ -31,7 +31,6 @@ const ensureDirectoryExists = (dirPath) => {
 };
 const initDatabase = () => {
   const dbPath = getDatabasePath();
-  console.log("Database path:", dbPath);
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       // 检查数据库文件是否存在
@@ -136,13 +135,11 @@ const delBook = (event, bookId) => {
 };
 
 const getBooks = (event) => {
-  console.log("Starting getBooks query");
   db.all(`SELECT * FROM ee_book WHERE isDel = 0`, (err, rows) => {
     if (err) {
       console.error("Error in getBooks query:", err.message);
       event.returnValue = { success: false, error: err.message };
     } else {
-      console.log("getBooks query result:", rows);
       event.returnValue = { success: true, data: rows };
     }
   });
@@ -159,7 +156,6 @@ const insertChapter = (chapter, event) => {
         console.error(err.message);
         event.reply("db-insert-chapter-response", { success: false }); // 发送失败响应
       } else {
-        console.log("db-insert-chapter-response id:", this.lastID);
         event.reply("db-insert-chapter-response", {
           success: true,
           id: this.lastID,
@@ -200,7 +196,6 @@ const getFirstChapter = (bookId, event) => {
 };
 
 const getChapter = (bookId, href, event) => {
-  console.log("getChapter", bookId, href);
   db.get(
     `SELECT * FROM ee_chapter WHERE bookId =? AND id =? `,
     [bookId, href],
@@ -216,7 +211,6 @@ const getChapter = (bookId, href, event) => {
 };
 
 const getChap = (bookId, href) => {
-  console.log("getChap", bookId, href);
   return new Promise((resolve, reject) => {
     db.get(
       `SELECT * FROM ee_chapter WHERE bookId =? AND id =? `,
@@ -242,7 +236,6 @@ const updateChapter = (chapter, event) => {
         event.returnValue = { success: false };
       } else {
         event.returnValue = { success: true, data: this.lastID };
-        console.log("Rows affected:", chapter.label);
       }
     }
   );
@@ -257,7 +250,6 @@ const updateToc = (book, event) => {
         event.returnValue = { success: false };
       } else {
         event.returnValue = { success: true, data: this.lastID };
-        console.log("Rows affected:", book.toc);
       }
     }
   );

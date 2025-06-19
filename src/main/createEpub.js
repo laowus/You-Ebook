@@ -1,3 +1,4 @@
+const { ipcMain } = require("electron");
 const JSZip = require("jszip");
 const { getChap } = require("./dbtool");
 // 递归生成 navPoints 的函数
@@ -47,7 +48,7 @@ const formatText = (text) => {
   return paragraphs.join("\n");
 };
 
-const createEpub = async (chapters, metadata) => {
+const createEpub = async (chapters, metadata, mainWin) => {
   return new Promise((resolve, reject) => {
     try {
       const { author, title } = metadata;
@@ -119,6 +120,10 @@ const createEpub = async (chapters, metadata) => {
           const result = await getChap(metadata.bookId, chapter.href);
           // 检查返回结果是否成功
           const content = result.success ? formatText(result.data.content) : "";
+          // 使用 mainWindow.webContents.send 发送消息给渲染进程
+          if (mainWin && mainWin.webContents) {
+            mainWin.webContents.send("showtip", chapter.label);
+          }
           zip.folder("OEBPS").file(
             `chapter${chapter.href}.xhtml`,
             `<?xml version="1.0" encoding="UTF-8"?>
@@ -141,7 +146,7 @@ const createEpub = async (chapters, metadata) => {
       addChapterFiles()
         .then(() => {
           const tocManifest = `<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`;
-
+          ipcMain.emit("hidetip");
           // 生成 content.opf
           zip.folder("").file(
             "content.opf",

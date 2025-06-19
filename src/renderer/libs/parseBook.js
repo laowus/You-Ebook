@@ -1,5 +1,4 @@
 import { makeBook } from "./view.js";
-import { toRaw } from "vue";
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore.js";
 import EventBus from "../common/EventBus";
@@ -56,12 +55,9 @@ export const open = async (file) => {
   const { setToc, setMetaData, setFirst } = useBookStore();
   const { metaData, isFirst, toc } = storeToRefs(useBookStore());
   return new Promise(async (resolve, reject) => {
-    console.log("file", file);
     const timestamp = Date.now();
     const book = await makeBook(file);
-    console.log(isFirst.value);
     if (isFirst.value) {
-      console.log("book", book);
       const coverDir = ipcRenderer.sendSync("get-cover-dir", "ping");
       let coverPath = "";
       if (book.metadata.cover) {
@@ -80,10 +76,8 @@ export const open = async (file) => {
         bookId = res.bookId;
         setMetaData({ ..._metaData, bookId: bookId });
         insertChapter(book, bookId).then(() => {
-          //setToc(book.toc);
           setFirst(false);
           const firstChapter = ipcRenderer.sendSync("db-first-chapter", bookId);
-          console.log("const open firstChapter", firstChapter.data);
           resolve(firstChapter.data);
           EventBus.emit("updateToc", firstChapter.data.id);
           EventBus.emit("hideTip");
@@ -93,9 +87,6 @@ export const open = async (file) => {
       const bookId = metaData.value.bookId;
       insertChapter(book, bookId).then(() => {
         EventBus.emit("hideTip");
-        // const newToc = [...toRaw(toc.value), ...book.toc];
-        console.log("book.toc", book.toc);
-        //setToc(newToc);
         EventBus.emit("updateToc", book.toc[0].href);
       });
     }
@@ -117,7 +108,6 @@ const iCTip = (text) => {
 const insertChapter = async (book, bookId) => {
   // [href, content]
   const insertTocItem = async (item, parentid = null) => {
-    console.log(item.label, "的父元素", parentid);
     const res = await book.resolveHref(item.href);
     // 等待 createDocument 完成
     const doc = await book.sections[res.index].createDocument();
