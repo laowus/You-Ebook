@@ -79,7 +79,6 @@ const delBook = (row) => {
           <el-button type="danger" size="small" @click="delBook(scope.row)"
             >删除</el-button
           >
-          <el-button type="warning" size="small">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>

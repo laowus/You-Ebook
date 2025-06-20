@@ -51,7 +51,7 @@ const formatText = (text) => {
 const createEpub = async (chapters, metadata, mainWin) => {
   return new Promise((resolve, reject) => {
     try {
-      const { author, title } = metadata;
+      const { author, title, cover } = metadata; // 从 metadata 中获取封面路径
       const zip = new JSZip();
       zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
       zip.folder("META-INF").file(
@@ -63,6 +63,14 @@ const createEpub = async (chapters, metadata, mainWin) => {
                 </rootfiles>
             </container>`.trim()
       );
+
+      // 添加封面图片到 OEBPS 文件夹
+      if (cover) {
+        const fs = require("fs");
+        const coverData = fs.readFileSync(cover);
+        const coverFileName = "cover.jpg"; // 假设封面图片为 JPG 格式
+        zip.folder("OEBPS").file(coverFileName, coverData);
+      }
 
       // 调用递归函数生成 navPoints
       const navPoints = generateNavPoints(chapters).join("\n");
@@ -94,23 +102,52 @@ const createEpub = async (chapters, metadata, mainWin) => {
       const flatChapters = flattenChapters(chapters);
 
       // 生成 manifest
-      const manifest = flatChapters
-        .map(
-          (chapter, index) => `
+      const manifestItems = flatChapters.map(
+        (chapter, index) => `
         <item id="chap${chapter.href}" href="OEBPS/chapter${chapter.href}.xhtml" media-type="application/xhtml+xml"/>
     `
-        )
-        .join("")
-        .trim();
+      );
+
+      if (cover) {
+        const coverFileName = "cover.jpg";
+        manifestItems.push(`
+          <item id="cover-image" href="OEBPS/${coverFileName}" media-type="image/jpeg"/>
+          <item id="cover" href="OEBPS/cover.xhtml" media-type="application/xhtml+xml"/>
+        `);
+      }
+
+      const manifest = manifestItems.join("").trim();
 
       // 生成 spine
-      const spine = flatChapters
-        .map(
-          (chapter, index) => `
+      const spineItems = flatChapters.map(
+        (chapter, index) => `
         <itemref idref="chap${chapter.href}"/>`
-        )
-        .join("")
-        .trim();
+      );
+
+      if (cover) {
+        spineItems.unshift(`<itemref idref="cover" linear="yes"/>`);
+      }
+
+      const spine = spineItems.join("").trim();
+
+      // 生成封面页面
+      if (cover) {
+        const coverFileName = "cover.jpg";
+        zip.folder("OEBPS").file(
+          "cover.xhtml",
+          `<?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+          <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+            <head>
+              <title>封面</title>
+            </head>
+            <body>
+              <img src="${coverFileName}" alt="封面" />
+            </body>
+          </html>
+          `.trim()
+        );
+      }
 
       // 生成内容页面
       // 将 forEach 替换为 for...of 循环
@@ -158,6 +195,7 @@ const createEpub = async (chapters, metadata, mainWin) => {
                 <dc:language>zh</dc:language>
                 <dc:creator>${author}</dc:creator>
                 <dc:identifier id="book-id">${new Date().getTime()}</dc:identifier>
+                ${cover ? '<meta name="cover" content="cover-image"/>' : ""}
               </metadata>
               <manifest>
                 ${manifest}

@@ -81,7 +81,7 @@ ipcRenderer.on("hidetip", () => {
   <div id="popovers">
     <HistoryView> </HistoryView>
     <EditView> </EditView>
-    <NewBook :isEdit="isEdit"> </NewBook>
+    <NewBook> </NewBook>
     <ContextMenu
       v-show="ctxMenuShow"
       :posStyle="ctxMenuPosStyle"
