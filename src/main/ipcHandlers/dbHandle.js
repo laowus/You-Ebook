@@ -3,6 +3,7 @@ const {
   insertBook,
   getBooks,
   delBook,
+  updateBook,
   getBook,
   insertChapter,
   getFirstChapter,
@@ -18,6 +19,9 @@ const dbHandle = () => {
   });
   ipcMain.on("db-get-books", (event) => {
     getBooks(event);
+  });
+  ipcMain.on("db-update-book", (event, book) => {
+    updateBook(book, event);
   });
   ipcMain.on("db-del-book", (event, bookId) => {
     delBook(event, bookId);

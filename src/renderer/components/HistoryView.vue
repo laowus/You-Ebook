@@ -4,10 +4,11 @@ import { storeToRefs } from "pinia";
 import EventBus from "../common/EventBus";
 import { useAppStore } from "../store/appStore";
 import { useBookStore } from "../store/bookStore";
-const { historyViewShow } = storeToRefs(useAppStore());
-const { hideHistoryView } = useAppStore();
-const { setMetaData, setToc, setFirst } = useBookStore();
 const { ipcRenderer } = window.require("electron");
+const { historyViewShow, editBookShow } = storeToRefs(useAppStore());
+const { setEditBookData, hideHistoryView } = useAppStore();
+const { setMetaData, setToc, setFirst } = useBookStore();
+
 const books = ref([]);
 // 定义获取书籍数据的函数
 const fetchBooks = () => {
@@ -59,6 +60,11 @@ const delBook = (row) => {
   });
   ipcRenderer.send("db-del-book", row.id);
 };
+const editBook = (row) => {
+  setEditBookData(row); // 设置要编辑的书籍数据
+  hideHistoryView();
+  editBookShow.value = true; // 显示 EditBook 弹窗
+};
 </script>
 <template>
   <el-dialog v-model="historyViewShow" title="历史记录" width="80%">
@@ -78,6 +84,9 @@ const delBook = (row) => {
           </el-button>
           <el-button type="danger" size="small" @click="delBook(scope.row)"
             >删除</el-button
+          >
+          <el-button type="danger" size="small" @click="editBook(scope.row)"
+            >编辑</el-button
           >
         </template>
       </el-table-column>

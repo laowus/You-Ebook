@@ -123,6 +123,20 @@ const insertBook = (book, event) => {
   );
 };
 
+const updateBook = (book, event )=>{
+  db.run(
+    `UPDATE ee_book SET title = ?, author = ?, description = ?, cover = ?, updateTime = datetime('now') WHERE id = ?`,
+    [book.title, book.author, book.description, book.cover, book.id],
+    function (err) {
+      if (err) {
+        console.error(err.message);
+        event.reply("db-update-book-response", { success: false });
+      } else {
+        event.reply("db-update-book-response", { success: true });
+      }
+    }
+  );
+}
 const delBook = (event, bookId) => {
   db.run(`UPDATE ee_book SET isDel = 1 WHERE id = ?`, [bookId], (err) => {
     if (err) {
@@ -259,6 +273,7 @@ const updateToc = (book, event) => {
 module.exports = {
   initDatabase,
   insertBook,
+  updateBook,
   delBook,
   getBooks,
   getChapters,

@@ -1,4 +1,5 @@
 <script setup>
+// 新建书籍/ 修改书籍
 import { ref, toRaw, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useAppStore } from "../store/appStore";
@@ -96,7 +97,7 @@ const addBook = () => {
 };
 </script>
 <template>
-  <el-dialog v-model="newBookShow" title="新建书籍" width="80%">
+  <el-dialog v-model="newBookShow" :title="'新建书籍'" width="80%">
     <el-form :model="meta" label-width="auto">
       <el-row>
         <el-col :span="11">
@@ -132,7 +133,6 @@ const addBook = () => {
         </el-col>
       </el-row>
     </el-form>
-
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="hideNewBook">关闭</el-button>
