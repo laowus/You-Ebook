@@ -7,7 +7,7 @@ const tindex = ref(0);
 const tabs = ref(["软件介绍", "捐赠支持"]);
 const tabContents = ref([
   `
-  YouEbook 是一个基于 Vue3 + Electron 开发的跨平台电子书生成器，支持 macOS、Windows、Linux 等操作系统。(本人只有Windows系统电脑, 其他没有平台测试。)
+  YouEbook（捡书） 是一个基于 Vue3 + Electron 开发的跨平台电子书编辑器，支持 macOS、Windows、Linux 等操作系统。(本人只有Windows系统电脑, 其他没有平台测试。)
 
   功能：
       1、导入txt，epub，html，mobi等文件，进行编辑，然后导出生成epub/txt/html文件。

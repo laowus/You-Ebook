@@ -1,37 +1,53 @@
-# ToDO List
+# <div align='center'><img src="https://github.com/laowus/Less-Reader/blob/main/public/icon.png" width="100" height="100"><br/>捡书 You Ebook</div>
 
-## 1、导入文件，
+一款基于 Electron + Vue 3 开发的电子书编辑器。
 
-```
-根据导入文件类型，进行不同的操作
-pinia保存操作的内容
-1.1、导入txt，html（解析成字符串）插入到数据库中。
-1.2、导入epub，mobi等。解析列表，循环插入数据库中。
-```
+你可以导入一些电子书，合并删除其中的内容，然后生成导出。
 
-## 2、toc 结构变化
+支持导入格式: EPUB、MOBI、AZW3、FB2、TXT
 
-```
-[
-  label:"第一章",
-  href:'#chapterId???',   //href="chapterid?"
-  subitems: null
-]
-toc 插入时候改变 href="chapterid?"
-```
+导出格式：EPUB、TXT、HTML
 
-## 3 导入历史记录
+### 联系:
 
-```
-从数据库里面恢复记录
-  目录级别的调整 : 向上一级 , 向下一级, 上下同级目录的一栋
-```
+有兴趣可以加入 QQ 群：616712461 (备注：You Ebook)
+或者本人 QQ:37156760 (备注：You Ebook) 交流共同进步
 
-## 4 对当前内容进行处理
+### 开发/测试环境
 
-```
-1、文字处理，去空行，
-2、分割段落
-     段落分解成后的title数组到一个子目录中。。
+- Windows 10( 个人电脑只有 Windows 系统的,linux 苹果系统没有测试)
+- IDE：[Visual Studio Code](https://code.visualstudio.com/)
+- [Nodejs](https://nodejs.org/)：v20.18.0(只是我电脑上的版本,其他版本可能也没关系)
+- 其他：详见 [package.json](package.json)
 
-```
+### 功能特性
+
+- 支持导入文件格式：EPUB、TXT、HTML、MOBI （导入前确认下导入文件是否为标准格式）
+- 支持导出文件格式：EPUB、TXT、HTML
+- 两种书籍生成方式。
+  - 1、新建书籍：
+    - 输入书籍名字和作者，简介，还有封面。
+    - 如果是当前有正在编辑的书籍，则会覆盖当前的书籍（书籍不会被删除，可以在历史记录里面）
+  - 2、导入书籍。
+    - 导入前如果没有在编辑的书籍状态，则默认为当前导入的书籍为书籍信息。譬如导入的是epub文件，就会获取当前epub文件的名字和作者、封面作为当前的书籍信息。
+    - （默认如果当前是书籍编辑状态，导入则为增加到当前书籍中的内容。如果想重新新建一个书籍，请重启软件恢复空状态，或者新建一本书。）
+  -
+
+### 预览图
+
+
+
+-
+### For 开发者- 请先下载安装最新版（或最新 LTS 版本） [Nodejs](https://nodejs.org/)
+- <b>如有问题，建议先查看文档</b>：[FAQ.md](FAQ.md)
+- <b>安装依赖</b>
+  `npm install`
+- <b>开发模式运行</b>
+  `npm run dev`
+- <b>构建打包</b>
+  `npm run dist`
+  或者，分步执行
+  `npm run build`
+  `npm run pack`
+- <b>更新依赖</b>
+  `npm update`
