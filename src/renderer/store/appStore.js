@@ -16,6 +16,7 @@ export const useAppStore = defineStore("appStore", {
     newBookShow: false,
     editBookShow: false,
     editBookData: null,
+    aboutShow: null,
   }),
   getters: {},
   actions: {
@@ -51,6 +52,12 @@ export const useAppStore = defineStore("appStore", {
     },
     hideEditBook() {
       this.editBookShow = false;
+    },
+    showAbout() {
+      this.aboutShow = true;
+    },
+    hideAbout() {
+      this.aboutShow = false;
     },
     setEditBookData(data) {
       // 添加设置要编辑的书籍数据的方法

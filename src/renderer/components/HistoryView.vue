@@ -81,7 +81,7 @@ const editBook = (row) => {
 };
 
 const resetData = () => {
-  if (confirm("确定要清空所有历史记吗？")) {
+  if (confirm("确定要清空所有历史记吗？会直接删除，无法回复！")) {
     // 监听重置表响应
     ipcRenderer.once("db-reset-tables-response", (event, response) => {
       if (response.success) {

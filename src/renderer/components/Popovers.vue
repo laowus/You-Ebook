@@ -9,6 +9,7 @@ import EditView from "./EditView.vue";
 import HistoryView from "./HistoryView.vue";
 import NewBook from "./NewBook.vue";
 import EditBook from "./EditBook.vue";
+import About from "./About.vue";
 const { ipcRenderer } = window.require("electron");
 
 const { ctxMenuShow, ctxMenuData, ctxMenuSeparatorNums, tipShow, tipText } =
@@ -84,6 +85,7 @@ ipcRenderer.on("hidetip", () => {
     <EditView> </EditView>
     <NewBook> </NewBook>
     <EditBook></EditBook>
+    <About></About>
     <ContextMenu
       v-show="ctxMenuShow"
       :posStyle="ctxMenuPosStyle"

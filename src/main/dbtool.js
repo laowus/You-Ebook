@@ -154,7 +154,7 @@ const createTable = () => {
 const insertBook = (book, event) => {
   db.run(
     ` INSERT INTO ee_book (title, author, description, cover, isDel, createTime, updateTime)
-     VALUES (? , ?, ?, ?, 0, datetime('now'), datetime('now'))`,
+     VALUES (? , ?, ?, ?, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))`,
     [book.title, book.author, book.description, book.cover],
     function (err) {
       if (err) {
@@ -172,7 +172,7 @@ const insertBook = (book, event) => {
 
 const updateBook = (book, event) => {
   db.run(
-    `UPDATE ee_book SET title = ?, author = ?, description = ?, cover = ?, updateTime = datetime('now') WHERE id = ?`,
+    `UPDATE ee_book SET title = ?, author = ?, description = ?, cover = ?, updateTime = datetime('now', 'localtime') WHERE id = ?`,
     [book.title, book.author, book.description, book.cover, book.id],
     function (err) {
       if (err) {
@@ -210,7 +210,7 @@ const insertChapter = (chapter, event) => {
   db.run(
     `
     INSERT INTO ee_chapter (bookId, label, href, content, createTime, updateTime)
-     VALUES (? , ?, ?, ?,  datetime('now'), datetime('now'))`,
+     VALUES (? , ?, ?, ?,  datetime('now', 'localtime'), datetime('now', 'localtime'))`,
     [chapter.bookId, chapter.label, chapter.href, chapter.content],
     function (err) {
       if (err) {
@@ -290,7 +290,7 @@ const getChap = (bookId, href) => {
 
 const updateChapter = (chapter, event) => {
   db.run(
-    `UPDATE ee_chapter SET content = ?,label =?, updateTime = datetime('now') WHERE bookId = ? AND href = ?`,
+    `UPDATE ee_chapter SET content = ?,label =?, updateTime = datetime('now', 'localtime') WHERE bookId = ? AND href = ?`,
     [chapter.content, chapter.label, chapter.bookId, chapter.href],
     (err) => {
       if (err) {
@@ -304,7 +304,7 @@ const updateChapter = (chapter, event) => {
 
 const updateToc = (book, event) => {
   db.run(
-    `UPDATE ee_book SET toc =?, updateTime = datetime('now') WHERE id = ?`,
+    `UPDATE ee_book SET toc =?, updateTime = datetime('now', 'localtime') WHERE id = ?`,
     [JSON.stringify(book.toc), book.id],
     (err) => {
       if (err) {

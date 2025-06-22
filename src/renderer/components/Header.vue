@@ -12,7 +12,7 @@ import { useAppStore } from "../store/appStore";
 const { ipcRenderer } = window.require("electron");
 const { curChapter, metaData, isFirst, toc } = storeToRefs(useBookStore());
 const { setMetaData, setFirst } = useBookStore();
-const { showHistoryView, showNewBook } = useAppStore();
+const { showHistoryView, showNewBook, showAbout } = useAppStore();
 
 const curIndex = ref(1);
 const indentNum = ref(2);
@@ -257,7 +257,15 @@ const restartApp = () => {
         >
           发布
         </div>
+        <div
+          class="tabname"
+          @click="changeTab(5)"
+          :class="{ active: curIndex === 5 }"
+        >
+          帮助
+        </div>
         <div class="drag-tab"></div>
+
         <WindowCtr />
       </div>
       <div class="tabcontent">
@@ -381,6 +389,12 @@ const restartApp = () => {
             <span>生成Html</span>
           </button>
         </div>
+        <div v-show="curIndex === 5">
+          <button class="btn-icon" @click="showAbout">
+            <span class="iconfont icon-daochuexl" style="color: green"></span>
+            <span>关于</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -406,11 +420,12 @@ const restartApp = () => {
   flex-direction: row;
   background-color: #87ceeb;
   padding-left: 10px;
-  gap: 20px;
+  gap: 10px;
 }
 
 .tabname {
-  width: 90px;
+  font-size: 14px;
+  width: 60px;
   height: 30px;
   align-items: center;
   justify-content: center;
@@ -432,6 +447,8 @@ const restartApp = () => {
 }
 
 .tabcontent div {
+  padding-left: 5px;
+  font-size: 12px;
   background-color: white;
   width: 100%;
   display: flex;
