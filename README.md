@@ -4,14 +4,17 @@
 
 你可以导入一些电子书，合并删除其中的内容，然后生成导出。
 
-支持导入格式: EPUB、MOBI、AZW3、FB2、TXT
+支持导入格式: EPUB、MOBI、TXT、HTML、AZW3、FB2、
 
 导出格式：EPUB、TXT、HTML
 
 ### 联系:
 
-有兴趣可以加入 QQ 群：616712461 (备注：You Ebook)
-或者本人 QQ:37156760 (备注：You Ebook) 交流共同进步
+有兴趣可以加入
+QQ 群：616712461 (备注：You Ebook)
+或者本人
+QQ:37156760 (备注：You Ebook)
+交流共同进步
 
 ### 开发/测试环境
 

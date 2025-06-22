@@ -2,10 +2,13 @@
 import { ref, watch, toRaw } from "vue";
 import { storeToRefs } from "pinia";
 import { useAppStore } from "../store/appStore";
+import { useBookStore } from "../store/bookStore";
 import { ElMessage } from "element-plus";
+const { ipcRenderer, webUtils } = window.require("electron");
+const { metaData } = storeToRefs(useBookStore());
 const { editBookShow, editBookData } = storeToRefs(useAppStore());
 const { hideEditBook, showHistoryView } = useAppStore();
-const { ipcRenderer, webUtils } = window.require("electron");
+
 const meta = ref({
   title: "",
   author: "",
@@ -60,6 +63,9 @@ const saveEditBook = () => {
   if (meta.value.title && meta.value.author) {
     ipcRenderer.send("db-update-book", toRaw(meta.value));
     ElMessage.success("书籍信息保存成功");
+    if (meta.value.bookId === metaData.value.bookId) {
+      metaData.value = meta.value;
+    }
     hideEditBook();
     showHistoryView();
   } else {
