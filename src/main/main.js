@@ -142,9 +142,9 @@ ipcMain.on("window-max", (event) => {
 });
 
 ipcMain.on("window-close", (event) => {
-  const webContent = event.sender;
-  const win = BrowserWindow.fromWebContents(webContent);
-  win.hide();
+  // const webContent = event.sender;
+  // const win = BrowserWindow.fromWebContents(webContent);
+  app.quit();
 });
 
 const sendToRenderer = (channel, args) => {

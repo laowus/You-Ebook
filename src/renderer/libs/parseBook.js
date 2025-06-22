@@ -57,6 +57,7 @@ export const open = async (file) => {
   return new Promise(async (resolve, reject) => {
     const timestamp = Date.now();
     const book = await makeBook(file);
+    console.log(book);
     if (isFirst.value) {
       const coverDir = ipcRenderer.sendSync("get-cover-dir", "ping");
       let coverPath = "";
@@ -66,7 +67,7 @@ export const open = async (file) => {
       }
       let _metaData = {
         title: book.metadata.title,
-        author: book.metadata.author,
+        author: book.metadata.author.name,
         description: book.metadata.description,
         cover: coverPath,
         path: file.path,
