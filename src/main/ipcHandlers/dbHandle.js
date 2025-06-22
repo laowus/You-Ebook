@@ -11,9 +11,13 @@ const {
   getChapters,
   updateChapter,
   updateToc,
+  resetTables, // 导出重置表函数
 } = require("../dbtool.js");
 
 const dbHandle = () => {
+  ipcMain.on("db-reset-tables", (event) => {
+    resetTables(event); // 调用重置表函数
+  });
   ipcMain.on("db-insert-book", (event, book) => {
     insertBook(book, event);
   });
@@ -48,6 +52,8 @@ const dbHandle = () => {
   ipcMain.on("db-update-chapter", (event, chapter) => {
     updateChapter(chapter, event);
   });
+
+
 };
 
 module.exports = dbHandle;

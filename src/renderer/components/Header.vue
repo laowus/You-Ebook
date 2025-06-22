@@ -210,6 +210,13 @@ const exportHtml = async () => {
     metaData: toRaw(metaData.value),
   });
 };
+
+// 定义重启程序的函数
+const restartApp = () => {
+  if (confirm("确定要重启程序吗？")) {
+    ipcRenderer.send("restart-app");
+  }
+};
 </script>
 <template>
   <div class="header">
@@ -274,6 +281,10 @@ const exportHtml = async () => {
           <button class="btn-icon" @click="showHistoryView">
             <span class="iconfont icon-lishijilu" style="color: green"></span>
             <span>历史记录</span>
+          </button>
+          <button class="btn-icon" @click="restartApp">
+            <span class="iconfont icon-zhongqi" style="color: red"></span>
+            <span> 重 启 </span>
           </button>
         </div>
         <div v-show="curIndex === 2">

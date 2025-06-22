@@ -64,6 +64,53 @@ const initDatabase = () => {
   });
 };
 
+// 重置所有表的函数
+const resetTables = (event) => {
+  console.log("resetTables 数据初始化");
+  db.serialize(() => {
+    // 删除 ee_book 表
+    db.run("DROP TABLE IF EXISTS ee_book", (err) => {
+      if (err) {
+        console.error("删除 ee_book 表失败:", err.message);
+        event.reply("db-reset-tables-response", {
+          success: false,
+          error: err.message,
+        });
+        return;
+      }
+      // 删除 ee_chapter 表
+      db.run("DROP TABLE IF EXISTS ee_chapter", (err) => {
+        if (err) {
+          console.error("删除 ee_chapter 表失败:", err.message);
+          event.reply("db-reset-tables-response", {
+            success: false,
+            error: err.message,
+          });
+          return;
+        }
+        // 重新创建表
+        createTable();
+        // 重置自增主键
+        db.run(
+          'DELETE FROM sqlite_sequence WHERE name IN ("ee_book", "ee_chapter")',
+          (err) => {
+            if (err) {
+              console.error("重置自增主键失败:", err.message);
+              event.reply("db-reset-tables-response", {
+                success: false,
+                error: err.message,
+              });
+            } else {
+              console.log("清除所有数据并重置自增主键成功.");
+              event.reply("db-reset-tables-response", { success: true });
+            }
+          }
+        );
+      });
+    });
+  });
+};
+
 // 创建数据库表
 const createTable = () => {
   db.run(
@@ -123,7 +170,7 @@ const insertBook = (book, event) => {
   );
 };
 
-const updateBook = (book, event )=>{
+const updateBook = (book, event) => {
   db.run(
     `UPDATE ee_book SET title = ?, author = ?, description = ?, cover = ?, updateTime = datetime('now') WHERE id = ?`,
     [book.title, book.author, book.description, book.cover, book.id],
@@ -136,7 +183,7 @@ const updateBook = (book, event )=>{
       }
     }
   );
-}
+};
 const delBook = (event, bookId) => {
   db.run(`UPDATE ee_book SET isDel = 1 WHERE id = ?`, [bookId], (err) => {
     if (err) {
@@ -283,4 +330,5 @@ module.exports = {
   getChap,
   updateChapter,
   updateToc,
+  resetTables, // 导出重置表函数
 };

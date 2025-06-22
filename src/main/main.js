@@ -299,6 +299,12 @@ const txtToHtmlString = (txt, title) => {
 `.trim();
 };
 
+// 监听重启程序请求
+ipcMain.on("restart-app", () => {
+  app.relaunch();
+  app.exit();
+});
+
 ipcMain.on("export-html", async (event, { chapters, metaData }) => {
   try {
     // 弹出保存对话框

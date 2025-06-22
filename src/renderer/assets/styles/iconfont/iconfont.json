@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "5663619",
+      "name": "重启",
+      "font_class": "zhongqi",
+      "unicode": "e631",
+      "unicode_decimal": 58929
+    },
+    {
       "icon_id": "5916406",
       "name": "HTML",
       "font_class": "HTML",
