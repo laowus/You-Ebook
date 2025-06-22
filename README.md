@@ -1,4 +1,4 @@
-# <div align='center'><img src="https://github.com/laowus/Less-Reader/blob/main/public/icon.png" width="100" height="100"><br/>捡书 You Ebook</div>
+# <div align='center'><img src="https://github.com/laowus/You-Ebook/blob/main/public/icon.png" width="100" height="100"><br/>捡书 You Ebook</div>
 
 一款基于 Electron + Vue 3 开发的电子书编辑器。
 
@@ -29,16 +29,22 @@
     - 输入书籍名字和作者，简介，还有封面。
     - 如果是当前有正在编辑的书籍，则会覆盖当前的书籍（书籍不会被删除，可以在历史记录里面）
   - 2、导入书籍。
-    - 导入前如果没有在编辑的书籍状态，则默认为当前导入的书籍为书籍信息。譬如导入的是epub文件，就会获取当前epub文件的名字和作者、封面作为当前的书籍信息。
+    - 导入前如果没有在编辑的书籍状态，则默认为当前导入的书籍为书籍信息。譬如导入的是 epub 文件，就会获取当前 epub 文件的名字和作者、封面作为当前的书籍信息。
     - （默认如果当前是书籍编辑状态，导入则为增加到当前书籍中的内容。如果想重新新建一个书籍，请重启软件恢复空状态，或者新建一本书。）
   -
 
 ### 预览图
 
-
+![Github snap 1.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/01.jpg)
+![Github snap 2.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/02.jpg)
+![Github snap 3.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/03.jpg)
+![Github snap 4.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/04.jpg)
+![Github snap 5.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/05.jpg)
 
 -
+
 ### For 开发者- 请先下载安装最新版（或最新 LTS 版本） [Nodejs](https://nodejs.org/)
+
 - <b>如有问题，建议先查看文档</b>：[FAQ.md](FAQ.md)
 - <b>安装依赖</b>
   `npm install`
