@@ -50,6 +50,8 @@ const createTOCItemElement = (list, map, onclick, oncontextmenu, onDrop) => {
     li.setAttribute("role", "none");
     li.draggable = true;
     li.addEventListener("dragstart", (event) => {
+      // 阻止事件冒泡
+      event.stopPropagation();
       event.dataTransfer.setData("text/plain", href);
       console.log("dragstart", href);
     });

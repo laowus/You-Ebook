@@ -91,36 +91,55 @@ export const useBookStore = defineStore(
       },
       //把fromHref移动到toHref的后面
       moveToc(fromHref, toHref) {
-        console.log("从", fromHref, "移动到", toHref);
+        // 递归查找目标项及其父级数组
+        const findItemAndParent = (href, items, parent = null) => {
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.href == href) {
+              return { item, parent, index: i, items };
+            }
+            if (item.subitems) {
+              const result = findItemAndParent(href, item.subitems, item);
+              if (result) {
+                return result;
+              }
+            }
+          }
+          return null;
+        };
 
-        // 找到 toHref 对应的目录项及其父级
-        const toItemParent = this.findParentByHref(toHref);
-        const toItems = toItemParent ? toItemParent.subitems : this.toc;
-        console.log("toItems", toItems);
-        console.log("toHref", toHref);
-        toItems.forEach((item) => {
-          console.log("item.href", item.href);
-        });
+        // 查找要移动的项及其父级
+        const fromResult = findItemAndParent(fromHref, this.toc);
+        console.log("fromResult", fromResult);
+        if (!fromResult) {
+          console.error("未找到要移动的目录项:", fromHref);
+          return;
+        }
+        const {
+          item: movingItem,
+          parent: fromParent,
+          index: fromIndex,
+          items: fromItems,
+        } = fromResult;
 
-        const toIndex = toItems.findIndex((item) => item.href == toHref);
-        console.log("toIndex", toIndex);
-        if (toIndex === -1) return;
+        // 从原位置移除要移动的项
+        fromItems.splice(fromIndex, 1);
 
-        // 找到 fromHref 对应的目录项及其父级
-        // const fromItemParent = this.findParentByHref(fromHref);
-        // const fromItems = fromItemParent ? fromItemParent.subitems : this.toc;
-        // const fromIndex = fromItems.findIndex((item) => item.href === fromHref);
-        // if (fromIndex === -1) return;
-        // const fromItem = fromItems.splice(fromIndex, 1)[0];
-        
-        const fromItem = this.findTocByHref(fromHref);
-        console.log("fromItem", fromItem);
+        // 查找目标项及其父级
+        const toResult = findItemAndParent(toHref, this.toc);
+        if (!toResult) {
+          console.error("未找到目标目录项:", toHref);
+          // 若未找到目标项，将移动项放回原位置
+          fromItems.splice(fromIndex, 0, movingItem);
+          return;
+        }
+        const { parent: toParent, index: toIndex, items: toItems } = toResult;
 
-        // 将 fromItem 插入到 toItem 后面
-        toItems.splice(toIndex + 1, 0, fromItem);
+        // 将移动项插入到目标项后面
+        toItems.splice(toIndex + 1, 0, movingItem);
 
         // 触发更新目录事件
-        EventBus.emit("updateToc", toHref);
+        EventBus.emit("updateToc", movingItem.href);
       },
       updateTocByHref(newItem) {
         const tocItem = this.findTocByHref(newItem.id);
@@ -135,7 +154,7 @@ export const useBookStore = defineStore(
         const findItem = (href, items) => {
           for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            if (item.href === href) {
+            if (item.href == href) {
               return item;
             }
             if (item.subitems && item.subitems.length > 0) {
@@ -153,7 +172,7 @@ export const useBookStore = defineStore(
         const parent = this.findParentByHref(href);
         if (parent) {
           const items = parent.subitems;
-          const index = items.findIndex((item) => item.href === href);
+          const index = items.findIndex((item) => item.href == href);
           if (index > -1) {
             const item = items.splice(index, 1)[0];
             // 找到父对象所在的层级
@@ -172,7 +191,7 @@ export const useBookStore = defineStore(
       lowerToc(href) {
         const parent = this.findParentByHref(href);
         const items = parent ? parent.subitems : this.toc;
-        const index = items.findIndex((item) => item.href === href);
+        const index = items.findIndex((item) => item.href == href);
 
         if (index > 0) {
           // 确保前面有兄弟对象
@@ -190,7 +209,7 @@ export const useBookStore = defineStore(
       upToc(href) {
         const parent = this.findParentByHref(href);
         const items = parent ? parent.subitems : this.toc;
-        const index = items.findIndex((item) => item.href === href);
+        const index = items.findIndex((item) => item.href == href);
 
         if (index > 0) {
           // 确保不是第一个元素
@@ -203,7 +222,7 @@ export const useBookStore = defineStore(
       downToc(href) {
         const parent = this.findParentByHref(href);
         const items = parent ? parent.subitems : this.toc;
-        const index = items.findIndex((item) => item.href === href);
+        const index = items.findIndex((item) => item.href == href);
 
         // 确保不是最后一个元素
         if (index < items.length - 1) {
@@ -219,7 +238,7 @@ export const useBookStore = defineStore(
             const item = items[i];
             if (item.subitems) {
               const found = item.subitems.find(
-                (subItem) => subItem.href === href
+                (subItem) => subItem.href == href
               );
               if (found) {
                 return item;
