@@ -30,7 +30,6 @@ export const useBookStore = defineStore(
         this.toc = null;
       },
       delTocByHref(href) {
-        console.log("delTocByHref", href);
         const removeItem = (items) => {
           for (let i = items.length - 1; i >= 0; i--) {
             const item = items[i];
@@ -58,7 +57,6 @@ export const useBookStore = defineStore(
       },
       // 插入数据库中 并更新目录以及当前章节
       addTocByHref(href, tocItem) {
-        //console.log("addTocByHref", href, tocItem);
         ipcRenderer.once("db-insert-chapter-response", (event, res) => {
           if (res.success) {
             const item = {
@@ -90,6 +88,39 @@ export const useBookStore = defineStore(
           }
         });
         ipcRenderer.send("db-insert-chapter", tocItem);
+      },
+      //把fromHref移动到toHref的后面
+      moveToc(fromHref, toHref) {
+        console.log("从", fromHref, "移动到", toHref);
+
+        // 找到 toHref 对应的目录项及其父级
+        const toItemParent = this.findParentByHref(toHref);
+        const toItems = toItemParent ? toItemParent.subitems : this.toc;
+        console.log("toItems", toItems);
+        console.log("toHref", toHref);
+        toItems.forEach((item) => {
+          console.log("item.href", item.href);
+        });
+
+        const toIndex = toItems.findIndex((item) => item.href == toHref);
+        console.log("toIndex", toIndex);
+        if (toIndex === -1) return;
+
+        // 找到 fromHref 对应的目录项及其父级
+        // const fromItemParent = this.findParentByHref(fromHref);
+        // const fromItems = fromItemParent ? fromItemParent.subitems : this.toc;
+        // const fromIndex = fromItems.findIndex((item) => item.href === fromHref);
+        // if (fromIndex === -1) return;
+        // const fromItem = fromItems.splice(fromIndex, 1)[0];
+        
+        const fromItem = this.findTocByHref(fromHref);
+        console.log("fromItem", fromItem);
+
+        // 将 fromItem 插入到 toItem 后面
+        toItems.splice(toIndex + 1, 0, fromItem);
+
+        // 触发更新目录事件
+        EventBus.emit("updateToc", toHref);
       },
       updateTocByHref(newItem) {
         const tocItem = this.findTocByHref(newItem.id);

@@ -1,7 +1,7 @@
 {
   "name": "you-ebook",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "src/main/main.js",
   "discription": "Easy convert some files to epub",
   "author": {
@@ -39,7 +39,7 @@
   },
   "build": {
     "appId": "xyz.hxl.youebook",
-    "productName": "YouEbook",
+    "productName": "You Ebook 捡书",
     "copyright": "Copyright © HXL2025",
     "directories": {
       "output": "output"

@@ -16,6 +16,13 @@ QQ 群：616712461 (备注：You Ebook)
 QQ:37156760 (备注：You Ebook)
 交流共同进步
 
+### TODO
+
+-V 0.0.2
+
+- [x] 1、 输出 HTML 空格转义。
+- [ ] 2、 目录标题拉动，进行位置的更改。
+
 ### 开发/测试环境
 
 - Windows 10( 个人电脑只有 Windows 系统的,linux 苹果系统没有测试)
@@ -34,7 +41,6 @@ QQ:37156760 (备注：You Ebook)
   - 2、导入书籍。
     - 导入前如果没有在编辑的书籍状态，则默认为当前导入的书籍为书籍信息。譬如导入的是 epub 文件，就会获取当前 epub 文件的名字和作者、封面作为当前的书籍信息。
     - （默认如果当前是书籍编辑状态，导入则为增加到当前书籍中的内容。如果想重新新建一个书籍，请重启软件恢复空状态，或者新建一本书。）
-  -
 
 ### 预览图
 
@@ -43,8 +49,6 @@ QQ:37156760 (备注：You Ebook)
 ![Github snap 3.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/03.jpg)
 ![Github snap 4.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/04.jpg)
 ![Github snap 5.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/05.jpg)
-
--
 
 ### For 开发者- 请先下载安装最新版（或最新 LTS 版本） [Nodejs](https://nodejs.org/)
 

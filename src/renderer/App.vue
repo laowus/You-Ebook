@@ -10,7 +10,7 @@ import { useAppStore } from "./store/appStore";
 import { useBookStore } from "./store/bookStore";
 
 const { ipcRenderer } = window.require("electron");
-const { addTocByHref } = useBookStore();
+const { addTocByHref, moveToc } = useBookStore();
 const { curChapter, metaData, toc } = storeToRefs(useBookStore());
 const { hideEditView, hideCtxMenu } = useAppStore();
 let tocView;
@@ -34,6 +34,9 @@ const updateTocView = (curhref) => {
     (href, event) => {
       updateCurChapter(href);
       showContextMenu(event, href);
+    },
+    (fromHref, toHref) => {
+      onDrop(fromHref, toHref);
     }
   );
   const tocViewElement = window.$("#toc-view");
@@ -43,6 +46,11 @@ const updateTocView = (curhref) => {
   updateCurChapter(curhref);
 };
 
+const onDrop = (fromHref, toHref) => {
+  console.log("拖动的 href:", fromHref);
+  console.log("目标的 href:", toHref);
+  moveToc(fromHref, toHref);
+};
 EventBus.on("addChapter", (res) => {
   addTocByHref(res.href, res.chapter); //添加到数据库
 });

@@ -12,7 +12,15 @@ const createExpanderIcon = () => {
   return svg;
 };
 
-const createTOCItemElement = (list, map, onclick, oncontextmenu) => {
+const getLastParamFromUrl = (url) => {
+  const lastSlashIndex = url.lastIndexOf("/");
+  if (lastSlashIndex === -1) {
+    return url;
+  }
+  return url.slice(lastSlashIndex + 1);
+};
+
+const createTOCItemElement = (list, map, onclick, oncontextmenu, onDrop) => {
   let count = 0;
   const makeID = () => `toc-element-${count++}`;
   const createItem = ({ label, href, subitems }, depth = 0) => {
@@ -40,19 +48,36 @@ const createTOCItemElement = (list, map, onclick, oncontextmenu) => {
 
     const li = document.createElement("li");
     li.setAttribute("role", "none");
+    li.draggable = true;
+    li.addEventListener("dragstart", (event) => {
+      event.dataTransfer.setData("text/plain", href);
+      console.log("dragstart", href);
+    });
+    li.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+    li.addEventListener("drop", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const fromHref = event.dataTransfer.getData("text/plain");
+      console.log("href", href);
+      console.log("fromHref", fromHref);
+      const aElement = event.currentTarget.querySelector("a");
+      const toHref = aElement ? getLastParamFromUrl(aElement.href) : null;
+      console.log("toHref", toHref);
+      onDrop(fromHref, toHref);
+    });
     li.append(a);
+
     if (subitems?.length) {
       a.setAttribute("aria-expanded", "false");
-      const expander = createExpanderIcon(); //创建一个svg图标
+      const expander = createExpanderIcon();
       expander.onclick = (event) => {
-        //添加点击事件 点击时切换aria-expanded属性 是否显示子项
         event.preventDefault();
         event.stopPropagation();
         const expanded = a.getAttribute("aria-expanded");
         a.setAttribute("aria-expanded", expanded === "true" ? "false" : "true");
       };
-      // <a ..><svg..></svg></a> 将svg图标插入到a标签中
-      // 这样点击a标签时，svg图标也会被点击
       a.prepend(expander);
       const ol = document.createElement("ol");
       ol.id = makeID();
@@ -69,12 +94,18 @@ const createTOCItemElement = (list, map, onclick, oncontextmenu) => {
 };
 
 // https://www.w3.org/TR/wai-aria-practices-1.2/examples/treeview/treeview-navigation.html
-export const createTOCView = (toc, onclick, oncontextmenu) => {
+export const createTOCView = (toc, onclick, oncontextmenu, onDrop) => {
   const $toc = document.createElement("ol");
   $toc.setAttribute("role", "tree");
   const list = [];
   const map = new Map();
-  const createItem = createTOCItemElement(list, map, onclick, oncontextmenu);
+  const createItem = createTOCItemElement(
+    list,
+    map,
+    onclick,
+    oncontextmenu,
+    onDrop
+  );
   $toc.replaceChildren(...toc.map((item) => createItem(item)));
 
   const isTreeItem = (item) => item?.getAttribute("role") === "treeitem";
@@ -116,6 +147,7 @@ export const createTOCView = (toc, onclick, oncontextmenu) => {
     }
     const el = map.get(href);
     if (!el) {
+      console.log("el", el);
       currentItem = list[0];
       currentItem.tabIndex = 0;
       return;
@@ -134,7 +166,7 @@ export const createTOCView = (toc, onclick, oncontextmenu) => {
       : NodeFilter.FILTER_SKIP;
   const iter = document.createTreeWalker($toc, 1, { acceptNode });
   const getIter = (current) => ((iter.currentNode = current), iter);
-
+  // 键盘操作
   for (const el of list)
     el.addEventListener("keydown", (event) => {
       let stop = false;
@@ -146,7 +178,7 @@ export const createTOCView = (toc, onclick, oncontextmenu) => {
           stop = true;
           break;
         case "ArrowDown":
-          getIter(currentTarget).nextNode()?.focus();
+          getIter(currentTarget).nextNode();
           stop = true;
           break;
         case "ArrowUp":

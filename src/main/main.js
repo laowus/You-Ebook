@@ -246,6 +246,7 @@ ipcMain.on("export-txt", async (event, { chapters, metaData }) => {
       });
     } else {
       await createTxt(chapters, metaData, mainWin).then((txtContent) => {
+        console.log("Text", txtContent);
         if (mainWin && mainWin.webContents) {
           mainWin.webContents.send("hidetip");
         }
@@ -277,8 +278,13 @@ const txtToHtmlString = (txt, title) => {
   // 先按两个及以上换行符分割成段落
   const paragraphs = txt.split(/\n{2,}/);
   // 对每个段落处理，将单个换行符替换为 <br> 标签
+  // 空格符号转义：将连续空格替换为 &nbsp;
   const htmlParagraphs = paragraphs.map((paragraph) => {
-    const lines = paragraph.split("\n");
+    // 转义空格
+    const escapedParagraph = paragraph.replace(/ {2,}/g, (match) => {
+      return "&nbsp;".repeat(match.length);
+    });
+    const lines = escapedParagraph.split("\n");
     return `<p>${lines.join("<br>")}</p>`;
   });
   // 合并所有段落
