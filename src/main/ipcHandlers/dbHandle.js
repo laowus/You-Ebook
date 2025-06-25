@@ -53,7 +53,6 @@ const dbHandle = () => {
     updateChapter(chapter, event);
   });
 
-
 };
 
 module.exports = dbHandle;

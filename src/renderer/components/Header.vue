@@ -10,8 +10,10 @@ import { parseFile, readTxtFile, getTextFromHTML } from "../common/utils";
 import { useBookStore } from "../store/bookStore";
 import { useAppStore } from "../store/appStore";
 const { ipcRenderer } = window.require("electron");
-const { curChapter, metaData, isFirst, toc } = storeToRefs(useBookStore());
-const { setMetaData, setFirst } = useBookStore();
+const { curChapter, metaData, isFirst, toc, isAllEdit } = storeToRefs(
+  useBookStore()
+);
+const { setMetaData, setFirst, setIsAllEdit } = useBookStore();
 const { showHistoryView, showNewBook, showAbout } = useAppStore();
 
 const curIndex = ref(1);
@@ -85,7 +87,7 @@ onMounted(() => {
   initDom();
 });
 //删除空行
-const deleteEmptyLines = () => {
+const deleteEmptyLines = async () => {
   if (curChapter.value.content) {
     // 按换行符分割字符串
     const lines = curChapter.value.content.split("\n");
@@ -94,9 +96,36 @@ const deleteEmptyLines = () => {
     // 重新拼接字符串
     curChapter.value.content = nonEmptyLines.join("\n");
   }
+  //书籍全部章节内容去空行
+  if (isAllEdit.value) {
+    const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
+    console.log(res);
+
+    if (res.success) {
+      for (const [index, chapter] of res.data.entries()) {
+        await removeEmptyLine(index, chapter, res.data);
+      }
+      EventBus.emit("hideTip");
+    }
+  }
 };
+
+const removeEmptyLine = async (index, chapter, chapters) => {
+  // 按换行符分割字符串
+  return new Promise((resolve, reject) => {
+    const lines = chapter.content.split("\n");
+    const nonEmptyLines = lines.filter((line) => line.trim() !== "");
+    chapter.content = nonEmptyLines.join("\n");
+    ipcRenderer.send("db-update-chapter", chapter);
+    iCTip(
+      "处理" + chapter.label + "中 ..." + (index + 1) + "/" + chapters.length
+    );
+    resolve();
+  });
+};
+
 // 缩进
-const indentFirstLine = () => {
+const indentFirstLine = async () => {
   if (curChapter.value.content) {
     const indentString = "    ".repeat(indentNum.value);
     console.log("空格", indentString, "空格");
@@ -109,8 +138,36 @@ const indentFirstLine = () => {
     // 重新拼接字符串
     curChapter.value.content = indentedLines.join("\n");
   }
+  //书籍全部章节内容去空行
+  if (isAllEdit.value) {
+    const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
+    console.log(res);
+
+    if (res.success) {
+      for (const [index, chapter] of res.data.entries()) {
+        await indentLine(index, chapter, res.data);
+      }
+      EventBus.emit("hideTip");
+    }
+  }
 };
 
+const indentLine = async (index, chapter, chapters) => {
+  // 按换行符分割字符串
+  return new Promise((resolve, reject) => {
+    const indentString = "    ".repeat(indentNum.value);
+    // 按换行符分割字符串
+    const lines = chapter.content.split("\n").map((line) => line.trimStart());
+    // 给每一行添加缩进
+    const indentedLines = lines.map((line) => indentString + line);
+    chapter.content = indentedLines.join("\n");
+    ipcRenderer.send("db-update-chapter", chapter);
+    iCTip(
+      "处理" + chapter.label + "中 ..." + (index + 1) + "/" + chapters.length
+    );
+    resolve();
+  });
+};
 const regString = () => {
   const pre = $("#pre").value;
   const aft = $("#aft").value;
@@ -325,6 +382,14 @@ const restartApp = () => {
               style="color: green"
             ></span>
             <span>首行缩进</span>
+          </button>
+          <button class="btn-icon" @click="setIsAllEdit">
+            <span
+              class="iconfont"
+              :class="isAllEdit ? 'icon-gouxuananniu' : 'icon-gouxuananniu1'"
+              style="color: green; font-size: 18px; padding-top: 8px"
+            ></span>
+            <span style="padding-top: 8px">应用全书</span>
           </button>
         </div>
         <div v-show="curIndex === 3">

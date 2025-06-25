@@ -227,18 +227,14 @@ const insertChapter = (chapter, event) => {
 };
 
 const getChapters = (bookId, event) => {
-  db.get(
-    `SELECT id, label, href FROM ee_chapter WHERE bookId =? `,
-    [bookId],
-    (err, rows) => {
-      if (err) {
-        console.error(err.message);
-        event.returnValue = { success: false };
-      } else {
-        event.returnValue = { success: true, data: rows };
-      }
+  db.all(`SELECT * FROM ee_chapter WHERE bookId =? `, [bookId], (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      event.returnValue = { success: false };
+    } else {
+      event.returnValue = { success: true, data: rows };
     }
-  );
+  });
 };
 
 const getFirstChapter = (bookId, event) => {
@@ -290,7 +286,7 @@ const getChap = (bookId, href) => {
 
 const updateChapter = (chapter, event) => {
   db.run(
-    `UPDATE ee_chapter SET content = ?,label =?, updateTime = datetime('now', 'localtime') WHERE bookId = ? AND href = ?`,
+    `UPDATE ee_chapter SET content = ?, label =?, updateTime = datetime('now', 'localtime') WHERE bookId = ? AND href = ?`,
     [chapter.content, chapter.label, chapter.bookId, chapter.href],
     (err) => {
       if (err) {
