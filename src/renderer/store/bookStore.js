@@ -14,7 +14,7 @@ export const useBookStore = defineStore(
         title: "",
         content: "",
       }, //当前编辑的章节
-      isAllEdit: true, //是否全部编辑
+      isAllEdit: false, //是否全部编辑
     }),
     getters: {},
     actions: {
