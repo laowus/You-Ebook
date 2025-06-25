@@ -99,29 +99,24 @@ const deleteEmptyLines = async () => {
   //书籍全部章节内容去空行
   if (isAllEdit.value) {
     const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
-    console.log(res);
-
     if (res.success) {
       for (const [index, chapter] of res.data.entries()) {
-        await removeEmptyLine(index, chapter, res.data);
+        const lines = chapter.content.split("\n");
+        const nonEmptyLines = lines.filter((line) => line.trim() !== "");
+        chapter.content = nonEmptyLines.join("\n");
+        iCTip(
+          "处理" +
+            chapter.label +
+            "中 ..." +
+            (index + 1) +
+            "/" +
+            res.data.length
+        );
+        await updateChapter(chapter);
       }
       EventBus.emit("hideTip");
     }
   }
-};
-
-const removeEmptyLine = async (index, chapter, chapters) => {
-  // 按换行符分割字符串
-  return new Promise((resolve, reject) => {
-    const lines = chapter.content.split("\n");
-    const nonEmptyLines = lines.filter((line) => line.trim() !== "");
-    chapter.content = nonEmptyLines.join("\n");
-    ipcRenderer.send("db-update-chapter", chapter);
-    iCTip(
-      "处理" + chapter.label + "中 ..." + (index + 1) + "/" + chapters.length
-    );
-    resolve();
-  });
 };
 
 // 缩进
@@ -141,31 +136,44 @@ const indentFirstLine = async () => {
   //书籍全部章节内容去空行
   if (isAllEdit.value) {
     const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
-    console.log(res);
+    console.log("缩进");
 
     if (res.success) {
       for (const [index, chapter] of res.data.entries()) {
-        await indentLine(index, chapter, res.data);
+        const indentString = "    ".repeat(indentNum.value);
+        // 按换行符分割字符串
+        const lines = chapter.content
+          .split("\n")
+          .map((line) => line.trimStart());
+        // 给每一行添加缩进
+        const indentedLines = lines.map((line) => indentString + line);
+        chapter.content = indentedLines.join("\n");
+        iCTip(
+          "处理" +
+            chapter.label +
+            "中 ..." +
+            (index + 1) +
+            "/" +
+            res.data.length
+        );
+        await updateChapter(chapter);
       }
       EventBus.emit("hideTip");
     }
   }
 };
 
-const indentLine = async (index, chapter, chapters) => {
+const updateChapter = async (chapter) => {
   // 按换行符分割字符串
   return new Promise((resolve, reject) => {
-    const indentString = "    ".repeat(indentNum.value);
-    // 按换行符分割字符串
-    const lines = chapter.content.split("\n").map((line) => line.trimStart());
-    // 给每一行添加缩进
-    const indentedLines = lines.map((line) => indentString + line);
-    chapter.content = indentedLines.join("\n");
+    ipcRenderer.once("db-update-chapter-response", (event, res) => {
+      if (res.success) {
+        resolve();
+      } else {
+        reject(new Error("数据库更新章节失败"));
+      }
+    });
     ipcRenderer.send("db-update-chapter", chapter);
-    iCTip(
-      "处理" + chapter.label + "中 ..." + (index + 1) + "/" + chapters.length
-    );
-    resolve();
   });
 };
 const regString = () => {
@@ -174,7 +182,8 @@ const regString = () => {
   let attach = $("#attach").value.trim();
   attach ? (attach = `|^\s*(${attach})`) : (attach = "");
   // 动态拼接正则表达式
-  const regexPattern = `^\\s*([${pre}][一二三四五六七八九十0-9]+[${aft}]).*${attach}([^\\n]+)?$`;
+  const regexPattern = `^\\s*([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}]).*${attach}([^\\n]+)?$`;
+  //限制章节长度
   const chapterRegex = new RegExp(regexPattern, "gm");
   console.log(chapterRegex);
 
