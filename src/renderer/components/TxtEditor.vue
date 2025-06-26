@@ -45,7 +45,7 @@ watch(
       scrollRightWrapperToTop();
       if (val && Object.keys(val).length > 0) {
         try {
-          ipcRenderer.sendSync("db-update-chapter", toRaw(val));
+          ipcRenderer.send("db-update-chapter", toRaw(val));
         } catch (error) {
           console.error("发送 db-update-chapter 消息时出错:", error);
         }

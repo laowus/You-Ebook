@@ -14,6 +14,7 @@ export const useBookStore = defineStore(
         title: "",
         content: "",
       }, //当前编辑的章节
+      isAllEdit: false, //是否全部编辑
     }),
     getters: {},
     actions: {
@@ -28,6 +29,9 @@ export const useBookStore = defineStore(
       },
       clearToc() {
         this.toc = null;
+      },
+      setIsAllEdit() {
+        this.isAllEdit = !this.isAllEdit;
       },
       delTocByHref(href) {
         const removeItem = (items) => {

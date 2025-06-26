@@ -18,10 +18,17 @@ QQ:37156760 (备注：You Ebook)
 
 ### TODO
 
--V 0.0.2
+-v 0.0.2
 
 - [x] 1、 输出 HTML 空格转义。
-- [ ] 2、 目录标题拉动，进行位置的更改。
+- [x] 2、 目录标题拉动，进行位置的更改。
+
+-v 0.0.3
+
+- [x] 1、 批量编辑，删空行，缩进。
+      ![Github snap 6](https://github.com/laowus/You-Ebook/blob/main/snapshot/06.jpg)
+- [x] 2、 优化正则分割章节
+      ![Github snap 7](https://github.com/laowus/You-Ebook/blob/main/snapshot/07.jpg)
 
 ### 开发/测试环境
 
@@ -44,11 +51,14 @@ QQ:37156760 (备注：You Ebook)
 
 ### 预览图
 
-![Github snap 1.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/01.jpg)
-![Github snap 2.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/02.jpg)
-![Github snap 3.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/03.jpg)
-![Github snap 4.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/04.jpg)
-![Github snap 5.png](https://github.com/laowus/You-Ebook/blob/main/snapshot/05.jpg)
+![Github snap 1](https://github.com/laowus/You-Ebook/blob/main/snapshot/01.jpg)
+![Github snap 2](https://github.com/laowus/You-Ebook/blob/main/snapshot/02.jpg)
+![Github snap 3](https://github.com/laowus/You-Ebook/blob/main/snapshot/03.jpg)
+![Github snap 4](https://github.com/laowus/You-Ebook/blob/main/snapshot/04.jpg)
+![Github snap 5](https://github.com/laowus/You-Ebook/blob/main/snapshot/05.jpg)
+![Github snap 6](https://github.com/laowus/You-Ebook/blob/main/snapshot/06.jpg)
+![Github snap 7](https://github.com/laowus/You-Ebook/blob/main/snapshot/07.jpg)
+![Github snap 8](https://github.com/laowus/You-Ebook/blob/main/snapshot/08.jpg)
 
 ### For 开发者- 请先下载安装最新版（或最新 LTS 版本） [Nodejs](https://nodejs.org/)
 

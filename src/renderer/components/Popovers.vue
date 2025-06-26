@@ -65,8 +65,8 @@ EventBus.on("showTip", (text) => {
   showTip(text);
 });
 
-EventBus.on("hideTip", () => {
-  showTip("插入完成!");
+EventBus.on("hideTip", (text = "完成!") => {
+  showTip(text);
   hideTip();
 });
 
@@ -75,7 +75,7 @@ ipcRenderer.on("showtip", (event, text) => {
   showTip(text);
 });
 ipcRenderer.on("hidetip", () => {
-  showTip("插入完成!");
+  showTip("完成!");
   hideTip();
 });
 </script>

@@ -10,8 +10,10 @@ import { parseFile, readTxtFile, getTextFromHTML } from "../common/utils";
 import { useBookStore } from "../store/bookStore";
 import { useAppStore } from "../store/appStore";
 const { ipcRenderer } = window.require("electron");
-const { curChapter, metaData, isFirst, toc } = storeToRefs(useBookStore());
-const { setMetaData, setFirst } = useBookStore();
+const { curChapter, metaData, isFirst, toc, isAllEdit } = storeToRefs(
+  useBookStore()
+);
+const { setMetaData, setFirst, setIsAllEdit } = useBookStore();
 const { showHistoryView, showNewBook, showAbout } = useAppStore();
 
 const curIndex = ref(1);
@@ -25,6 +27,7 @@ const reg = {
   aft: ["", "章", "回", "节", "集", "部", "篇", "部分"],
   selected: [1, 1],
 };
+const strNum = ref(20);
 
 const initDom = () => {
   $("#add-file").addEventListener("change", (e) => {
@@ -85,7 +88,7 @@ onMounted(() => {
   initDom();
 });
 //删除空行
-const deleteEmptyLines = () => {
+const deleteEmptyLines = async () => {
   if (curChapter.value.content) {
     // 按换行符分割字符串
     const lines = curChapter.value.content.split("\n");
@@ -94,9 +97,32 @@ const deleteEmptyLines = () => {
     // 重新拼接字符串
     curChapter.value.content = nonEmptyLines.join("\n");
   }
+  //书籍全部章节内容去空行
+  if (isAllEdit.value) {
+    const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
+    if (res.success) {
+      for (const [index, chapter] of res.data.entries()) {
+        const lines = chapter.content.split("\n");
+        const nonEmptyLines = lines.filter((line) => line.trim() !== "");
+        chapter.content = nonEmptyLines.join("\n");
+        iCTip(
+          "处理 " +
+            chapter.label +
+            "  (" +
+            (index + 1) +
+            "/" +
+            res.data.length +
+            ")"
+        );
+        await updateChapter(chapter);
+      }
+      EventBus.emit("hideTip");
+    }
+  }
 };
+
 // 缩进
-const indentFirstLine = () => {
+const indentFirstLine = async () => {
   if (curChapter.value.content) {
     const indentString = "    ".repeat(indentNum.value);
     console.log("空格", indentString, "空格");
@@ -109,15 +135,57 @@ const indentFirstLine = () => {
     // 重新拼接字符串
     curChapter.value.content = indentedLines.join("\n");
   }
+  //书籍全部章节内容去空行
+  if (isAllEdit.value) {
+    const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
+    if (res.success) {
+      for (const [index, chapter] of res.data.entries()) {
+        const indentString = "    ".repeat(indentNum.value);
+        // 按换行符分割字符串
+        const lines = chapter.content
+          .split("\n")
+          .map((line) => line.trimStart());
+        // 给每一行添加缩进
+        const indentedLines = lines.map((line) => indentString + line);
+        chapter.content = indentedLines.join("\n");
+        iCTip(
+          "处理 " +
+            chapter.label +
+            "  (" +
+            (index + 1) +
+            "/" +
+            res.data.length +
+            ")"
+        );
+        await updateChapter(chapter);
+      }
+      EventBus.emit("hideTip");
+    }
+  }
 };
 
+const updateChapter = async (chapter) => {
+  // 按换行符分割字符串
+  return new Promise((resolve, reject) => {
+    ipcRenderer.once("db-update-chapter-response", (event, res) => {
+      if (res.success) {
+        resolve();
+      } else {
+        reject(new Error("数据库更新章节失败"));
+      }
+    });
+    ipcRenderer.send("db-update-chapter", chapter);
+  });
+};
 const regString = () => {
   const pre = $("#pre").value;
   const aft = $("#aft").value;
+  const strNum = $("#strNum").value;
   let attach = $("#attach").value.trim();
-  attach ? (attach = `|^\s*(${attach})`) : (attach = "");
-  // 动态拼接正则表达式
-  const regexPattern = `^\\s*([${pre}][一二三四五六七八九十0-9]+[${aft}]).*${attach}([^\\n]+)?$`;
+  // 当 attach 不为空时才拼接正则部分
+  const attachPart = attach ? `|^\\s*(${attach})` : "";
+  // 动态拼接正则表达式，限制章名长度不超过 20 个字符
+  const regexPattern = `^\\s*(([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])${attachPart})(.{0,${strNum}}[^\\n]?)?$`;
   const chapterRegex = new RegExp(regexPattern, "gm");
   console.log(chapterRegex);
 
@@ -161,7 +229,9 @@ const insertChapters = async (chapters, id) => {
       href: `OPS/chapter-${Date.now()}`,
       content: chap.content,
     };
-    iCTip("导入" + chap.label + "中 ..." + (index + 1) + "/" + chapters.length);
+    iCTip(
+      "导入 " + chap.label + "  (" + (index + 1) + "/" + chapters.length + ")"
+    );
     //await 等待章节插入完成
     await insertSingleChapter(chapter);
   }
@@ -326,6 +396,14 @@ const restartApp = () => {
             ></span>
             <span>首行缩进</span>
           </button>
+          <button class="btn-icon" @click="setIsAllEdit">
+            <span
+              class="iconfont"
+              :class="isAllEdit ? 'icon-gouxuananniu' : 'icon-gouxuananniu1'"
+              style="color: green; font-size: 18px; padding-top: 8px"
+            ></span>
+            <span style="padding-top: 8px">应用全书</span>
+          </button>
         </div>
         <div v-show="curIndex === 3">
           <div class="reg-string">
@@ -347,6 +425,12 @@ const restartApp = () => {
                 {{ af }}
               </option>
             </select>
+            <span><</span>
+            <input
+              id="strNum"
+              style="width: 30px; height: 20px; font-size: 12px"
+              v-model="strNum"
+            />
             <span>特别:</span>
             <input
               id="attach"

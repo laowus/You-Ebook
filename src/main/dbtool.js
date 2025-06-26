@@ -227,18 +227,14 @@ const insertChapter = (chapter, event) => {
 };
 
 const getChapters = (bookId, event) => {
-  db.get(
-    `SELECT id, label, href FROM ee_chapter WHERE bookId =? `,
-    [bookId],
-    (err, rows) => {
-      if (err) {
-        console.error(err.message);
-        event.returnValue = { success: false };
-      } else {
-        event.returnValue = { success: true, data: rows };
-      }
+  db.all(`SELECT * FROM ee_chapter WHERE bookId =? `, [bookId], (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      event.returnValue = { success: false };
+    } else {
+      event.returnValue = { success: true, data: rows };
     }
-  );
+  });
 };
 
 const getFirstChapter = (bookId, event) => {
@@ -290,13 +286,18 @@ const getChap = (bookId, href) => {
 
 const updateChapter = (chapter, event) => {
   db.run(
-    `UPDATE ee_chapter SET content = ?,label =?, updateTime = datetime('now', 'localtime') WHERE bookId = ? AND href = ?`,
+    `UPDATE ee_chapter SET content = ?, label = ?, updateTime = datetime('now', 'localtime') WHERE bookId = ? AND href = ?`,
     [chapter.content, chapter.label, chapter.bookId, chapter.href],
-    (err) => {
+    function (err) {
       if (err) {
-        event.returnValue = { success: false };
+        event.reply("db-update-chapter-response", {
+          success: false,
+        });
       } else {
-        event.returnValue = { success: true, data: this.lastID };
+        // 使用 sender.send 发送成功响应给渲染进程
+        event.reply("db-update-chapter-response", {
+          success: true,
+        });
       }
     }
   );
@@ -316,7 +317,47 @@ const updateToc = (book, event) => {
   );
 };
 
-//导出
+// 批量更新章节信息
+const batchUpdateChapters = (chapters, event) => {
+  db.serialize(() => {
+    const stmt = db.prepare(
+      `UPDATE ee_chapter SET content = ?, label =?, updateTime = datetime('now', 'localtime') WHERE bookId = ? AND href = ?`
+    );
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const chapter of chapters) {
+      stmt.run(
+        [chapter.content, chapter.label, chapter.bookId, chapter.href],
+        (err) => {
+          if (err) {
+            console.error("批量更新章节信息失败:", err);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        }
+      );
+    }
+
+    stmt.finalize(() => {
+      if (errorCount === 0) {
+        event.reply("db-batch-update-chapters-response", {
+          success: true,
+          successCount,
+        });
+      } else {
+        event.reply("db-batch-update-chapters-response", {
+          success: false,
+          successCount,
+          errorCount,
+        });
+      }
+    });
+  });
+};
+
+// 导出批量更新函数
 module.exports = {
   initDatabase,
   insertBook,
