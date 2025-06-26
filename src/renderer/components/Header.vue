@@ -106,12 +106,13 @@ const deleteEmptyLines = async () => {
         const nonEmptyLines = lines.filter((line) => line.trim() !== "");
         chapter.content = nonEmptyLines.join("\n");
         iCTip(
-          "处理" +
+          "处理 " +
             chapter.label +
-            "中 ..." +
+            "  (" +
             (index + 1) +
             "/" +
-            res.data.length
+            res.data.length +
+            ")"
         );
         await updateChapter(chapter);
       }
@@ -137,8 +138,6 @@ const indentFirstLine = async () => {
   //书籍全部章节内容去空行
   if (isAllEdit.value) {
     const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
-    console.log("缩进");
-
     if (res.success) {
       for (const [index, chapter] of res.data.entries()) {
         const indentString = "    ".repeat(indentNum.value);
@@ -150,12 +149,13 @@ const indentFirstLine = async () => {
         const indentedLines = lines.map((line) => indentString + line);
         chapter.content = indentedLines.join("\n");
         iCTip(
-          "处理" +
+          "处理 " +
             chapter.label +
-            "中 ..." +
+            "  (" +
             (index + 1) +
             "/" +
-            res.data.length
+            res.data.length +
+            ")"
         );
         await updateChapter(chapter);
       }
@@ -184,7 +184,7 @@ const regString = () => {
   let attach = $("#attach").value.trim();
   attach ? (attach = `|^\s*(${attach})`) : (attach = "");
   // 动态拼接正则表达式，限制章名长度不超过 20 个字符
-  const regexPattern = `^\\s*([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])(.{0,${strNum}}[^\\n]?).${attach}?$`;
+  const regexPattern = `^\\s*(([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])|(${attach}?))(.{0,${strNum}}[^\\n]?)?$`;
   const chapterRegex = new RegExp(regexPattern, "gm");
   console.log(chapterRegex);
 
@@ -228,7 +228,9 @@ const insertChapters = async (chapters, id) => {
       href: `OPS/chapter-${Date.now()}`,
       content: chap.content,
     };
-    iCTip("导入" + chap.label + "中 ..." + (index + 1) + "/" + chapters.length);
+    iCTip(
+      "导入 " + chap.label + "  (" + (index + 1) + "/" + chapters.length + ")"
+    );
     //await 等待章节插入完成
     await insertSingleChapter(chapter);
   }

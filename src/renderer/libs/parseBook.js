@@ -142,7 +142,7 @@ const insertChapter = async (book, bookId) => {
   // 使用 entries() 方法获取索引和元素
   for (const [index, tocItem] of book.toc.entries()) {
     iCTip(
-      "导入" + tocItem.label + "中 ..." + (index + 1) + "/" + book.toc.length
+      "导入 " + tocItem.label + " (" + (index + 1) + "/" + book.toc.length + ")"
     );
     await insertTocItem(tocItem, null);
   }
