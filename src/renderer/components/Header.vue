@@ -27,6 +27,7 @@ const reg = {
   aft: ["", "章", "回", "节", "集", "部", "篇", "部分"],
   selected: [1, 1],
 };
+const strNum = ref(20);
 
 const initDom = () => {
   $("#add-file").addEventListener("change", (e) => {
@@ -179,11 +180,11 @@ const updateChapter = async (chapter) => {
 const regString = () => {
   const pre = $("#pre").value;
   const aft = $("#aft").value;
+  const strNum = $("#strNum").value;
   let attach = $("#attach").value.trim();
   attach ? (attach = `|^\s*(${attach})`) : (attach = "");
-  // 动态拼接正则表达式
-  const regexPattern = `^\\s*([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}]).*${attach}([^\\n]+)?$`;
-  //限制章节长度
+  // 动态拼接正则表达式，限制章名长度不超过 20 个字符
+  const regexPattern = `^\\s*([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])(.{0,${strNum}}[^\\n]?).${attach}?$`;
   const chapterRegex = new RegExp(regexPattern, "gm");
   console.log(chapterRegex);
 
@@ -421,6 +422,12 @@ const restartApp = () => {
                 {{ af }}
               </option>
             </select>
+            <span><</span>
+            <input
+              id="strNum"
+              style="width: 30px; height: 20px; font-size: 12px"
+              v-model="strNum"
+            />
             <span>特别:</span>
             <input
               id="attach"
