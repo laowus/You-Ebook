@@ -182,9 +182,10 @@ const regString = () => {
   const aft = $("#aft").value;
   const strNum = $("#strNum").value;
   let attach = $("#attach").value.trim();
-  attach ? (attach = `|^\s*(${attach})`) : (attach = "");
+  // 当 attach 不为空时才拼接正则部分
+  const attachPart = attach ? `|^\s*(${attach})` : ""; 
   // 动态拼接正则表达式，限制章名长度不超过 20 个字符
-  const regexPattern = `^\\s*(([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])|(${attach}?))(.{0,${strNum}}[^\\n]?)?$`;
+  const regexPattern = `^\\s*(([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])${attachPart})(.{0,${strNum}}[^\\n]?)?$`;
   const chapterRegex = new RegExp(regexPattern, "gm");
   console.log(chapterRegex);
 
