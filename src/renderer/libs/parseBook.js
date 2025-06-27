@@ -98,7 +98,26 @@ export const open = async (file) => {
 const getTextFromHTML = (htmlString) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, "text/html");
-  return doc.body.textContent || "";
+
+  // 递归处理节点，保留 img 标签，其他转为文本
+  function processNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent;
+    } else if (node.nodeName === "IMG") {
+      // 保留 img 标签的原始 HTML 获取img的src属性
+      const src = node.getAttribute("src");
+      return node.outerHTML;
+    } else {
+      let result = "";
+      // 遍历子节点
+      for (let child of node.childNodes) {
+        result += processNode(child);
+      }
+      return result;
+    }
+  }
+
+  return processNode(doc.body) || "";
 };
 
 const iCTip = (text) => {
@@ -112,6 +131,7 @@ const insertChapter = async (book, bookId) => {
     const res = await book.resolveHref(item.href);
     // 等待 createDocument 完成
     const doc = await book.sections[res.index].createDocument();
+    console.log("doc", doc);
     const str = getTextFromHTML(doc.documentElement.outerHTML);
     // 封装发送请求和监听响应为一个 Promise
     await new Promise((resolve, reject) => {
