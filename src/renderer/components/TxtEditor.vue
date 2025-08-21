@@ -42,7 +42,7 @@ watch(
       const scrollHeight = textarea.scrollHeight;
       const rows = Math.ceil(scrollHeight / lineHeight);
       line(rows);
-      scrollRightWrapperToTop();
+      // scrollRightWrapperToTop();
       if (val && Object.keys(val).length > 0) {
         try {
           ipcRenderer.send("db-update-chapter", toRaw(val));
