@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, watch, onMounted, toRaw } from "vue";
+import { ref, inject, watch, onMounted, toRaw, computed } from "vue";
 const { ipcRenderer } = window.require("electron");
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore";
@@ -9,7 +9,38 @@ const barValue = ref("1");
 const suffix = ref("\n");
 const editArea = ref(null);
 const barArea = ref(null);
+const currentLine = ref(0); // 当前光标所在行
 
+// 计算当前行的背景渐变
+const highlightBackground = computed(() => {
+  if (!editArea.value) return "";
+
+  const lineHeight = 28; // 与CSS中的line-height保持一致
+  const currentLinePos = (currentLine.value - 1) * lineHeight;
+  console.log;
+  // 创建黄色高亮的渐变
+  return `repeating-linear-gradient(
+    transparent 0px,
+    transparent ${currentLinePos}px,
+    yellow ${currentLinePos}px,
+    yellow ${currentLinePos + lineHeight}px,
+    transparent ${currentLinePos + lineHeight}px,
+    transparent ${lineHeight}px
+  ), repeating-linear-gradient(#eee 0 1px, transparent 1px ${lineHeight}px)`;
+});
+
+// 获取光标所在行
+const getCurrentLine = () => {
+  if (!editArea.value) return;
+
+  const textarea = editArea.value;
+  const cursorPos = textarea.selectionStart;
+  const textBeforeCursor = textarea.value.substring(0, cursorPos);
+  const lines = textBeforeCursor.split("\n");
+
+  currentLine.value = lines.length;
+  console.log("lines", lines.length);
+};
 // 设置行号方法
 const line = (n) => {
   let num = "";
@@ -32,6 +63,10 @@ const scrollRightWrapperToTop = () => {
   }
 };
 // 监听 value 变化
+// 监听光标位置变化
+const handleSelectionChange = () => {
+  getCurrentLine();
+};
 
 watch(
   curChapter,
@@ -59,6 +94,11 @@ watch(
 
 onMounted(() => {
   if (editArea.value) {
+    // 监听光标位置变化
+    editArea.value.addEventListener("click", handleSelectionChange);
+    editArea.value.addEventListener("keyup", handleSelectionChange);
+    editArea.value.addEventListener("input", handleSelectionChange);
+
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         if (entry.contentRect.width !== entry.borderBoxSize[0].inlineSize) {
@@ -72,6 +112,7 @@ onMounted(() => {
     });
     observer.observe(editArea.value);
   }
+
   // 组件挂载时滚动到顶部
   scrollRightWrapperToTop();
 });
@@ -96,6 +137,7 @@ onMounted(() => {
         class="edit-area"
         name="content"
         @scroll="syncScrollTop"
+        :style="{ backgroundImage: highlightBackground }"
       />
     </div>
   </div>
@@ -136,9 +178,9 @@ onMounted(() => {
   font-family: inherit;
   box-sizing: border-box;
   padding-left: 5px;
-  background-image: repeating-linear-gradient(#eee 0 1px, transparent 1px 28px);
-  background-size: 100% 28px;
+  /* background-size: 100% 28px; */
   background-attachment: local;
+  transition: background-image 0.1s ease;
 }
 
 .bar-area {

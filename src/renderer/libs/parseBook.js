@@ -132,7 +132,7 @@ const insertChapter = async (book, bookId) => {
     // 等待 createDocument 完成
     const doc = await book.sections[res.index].createDocument();
     console.log("doc", doc);
-    const str = getTextFromHTML(doc.documentElement.outerHTML);
+    const str = doc.documentElement.outerHTML;
     // 封装发送请求和监听响应为一个 Promise
     await new Promise((resolve, reject) => {
       const successListener = (res) => {

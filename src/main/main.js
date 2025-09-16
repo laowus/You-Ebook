@@ -63,6 +63,7 @@ const createWindow = () => {
       height: windowHeight,
       x: windowX,
       y: windowY,
+      icon: path.join(publicRoot, "/images/logo.png"),
     });
     if (isDevEnv) {
       mainWindow.loadURL("http://localhost:4000/");
