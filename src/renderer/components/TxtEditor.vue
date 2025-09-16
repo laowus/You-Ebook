@@ -25,7 +25,7 @@ const highlightBackground = computed(() => {
     yellow ${currentLinePos}px,
     yellow ${currentLinePos + lineHeight}px,
     transparent ${currentLinePos + lineHeight}px,
-    transparent ${lineHeight}px
+    transparent calc(100vh + ${currentLinePos + lineHeight}px)
   ), repeating-linear-gradient(#eee 0 1px, transparent 1px ${lineHeight}px)`;
 });
 
