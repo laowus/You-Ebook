@@ -30,6 +30,9 @@ QQ:37156760 (备注：You Ebook)
 - [x] 2、 优化正则分割章节
       ![Github snap 7](https://github.com/laowus/You-Ebook/blob/main/snapshot/07.jpg)
 
+- [] 3、 支持html( 加粗, 斜体, 下划线, 代码, 添加图片 )
+        解析 html 标签，转换为对应的格式。图片存放形式
+
 ### 开发/测试环境
 
 - Windows 10( 个人电脑只有 Windows 系统的,linux 苹果系统没有测试)

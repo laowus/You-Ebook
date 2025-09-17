@@ -3,7 +3,7 @@ import { ref, inject, watch, onMounted, toRaw, computed } from "vue";
 const { ipcRenderer } = window.require("electron");
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore";
-const { curChapter, metaData, toc } = storeToRefs(useBookStore());
+const { curChapter } = storeToRefs(useBookStore());
 
 const barValue = ref("1");
 const suffix = ref("\n");
@@ -17,7 +17,9 @@ const highlightBackground = computed(() => {
 
   const lineHeight = 28; // 与CSS中的line-height保持一致
   const currentLinePos = (currentLine.value - 1) * lineHeight;
-  console.log;
+
+  // 获取文本区域的实际滚动高度
+  const scrollHeight = editArea.value.scrollHeight;
   // 创建黄色高亮的渐变
   return `repeating-linear-gradient(
     transparent 0px,
@@ -25,21 +27,60 @@ const highlightBackground = computed(() => {
     yellow ${currentLinePos}px,
     yellow ${currentLinePos + lineHeight}px,
     transparent ${currentLinePos + lineHeight}px,
-    transparent calc(100vh + ${currentLinePos + lineHeight}px)
+    transparent ${scrollHeight}px
   ), repeating-linear-gradient(#eee 0 1px, transparent 1px ${lineHeight}px)`;
 });
+
+const getVisualLineNumber = () => {
+  if (!editArea.value) return 1;
+
+  const textarea = editArea.value;
+  const cursorPos = textarea.selectionStart;
+
+  // 创建一个与textarea样式相同的临时div元素
+  const temp = document.createElement("div");
+
+  // 设置与textarea相同的样式，确保文本渲染效果一致
+  temp.style.cssText = `
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    font: inherit;
+    font-size: ${getComputedStyle(textarea).fontSize};
+    font-family: ${getComputedStyle(textarea).fontFamily};
+    line-height: ${getComputedStyle(textarea).lineHeight};
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    width: ${textarea.clientWidth}px;
+    padding: ${getComputedStyle(textarea).padding};
+    margin: ${getComputedStyle(textarea).margin};
+    border: ${getComputedStyle(textarea).border};
+    box-sizing: ${getComputedStyle(textarea).boxSizing};
+  `;
+
+  // 填充文本直到光标位置
+  temp.textContent = textarea.value.substring(0, cursorPos);
+
+  // 将临时元素添加到文档中以计算高度
+  document.body.appendChild(temp);
+
+  // 获取行高和临时元素高度，计算视觉行数
+  const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
+  const visualLineCount = Math.ceil(temp.clientHeight / lineHeight);
+
+  // 移除临时元素
+  document.body.removeChild(temp);
+
+  return visualLineCount;
+};
 
 // 获取光标所在行
 const getCurrentLine = () => {
   if (!editArea.value) return;
 
-  const textarea = editArea.value;
-  const cursorPos = textarea.selectionStart;
-  const textBeforeCursor = textarea.value.substring(0, cursorPos);
-  const lines = textBeforeCursor.split("\n");
-
-  currentLine.value = lines.length;
-  console.log("lines", lines.length);
+  const visualLineNumber = getVisualLineNumber();
+  currentLine.value = visualLineNumber;
+  console.log("视觉行号:", visualLineNumber);
 };
 // 设置行号方法
 const line = (n) => {
@@ -54,6 +95,7 @@ const line = (n) => {
 const syncScrollTop = () => {
   if (barArea.value && editArea.value) {
     barArea.value.scrollTop = editArea.value.scrollTop;
+    handleSelectionChange();
   }
 };
 // 滚动到顶部的方法
@@ -71,6 +113,7 @@ const handleSelectionChange = () => {
 watch(
   curChapter,
   (val) => {
+    console.log("curChapter", val);
     queueMicrotask(() => {
       const textarea = editArea.value;
       const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
@@ -109,6 +152,7 @@ onMounted(() => {
           line(rows);
         }
       }
+      handleSelectionChange();
     });
     observer.observe(editArea.value);
   }
