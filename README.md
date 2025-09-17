@@ -11,9 +11,13 @@
 ### 联系:
 
 有兴趣可以加入
+
 QQ 群：616712461 (备注：You Ebook)
+
 或者本人
+
 QQ:37156760 (备注：You Ebook)
+
 交流共同进步
 
 ### TODO
@@ -30,8 +34,8 @@ QQ:37156760 (备注：You Ebook)
 - [x] 2、 优化正则分割章节
       ![Github snap 7](https://github.com/laowus/You-Ebook/blob/main/snapshot/07.jpg)
 
-- [] 3、 支持html( 加粗, 斜体, 下划线, 代码, 添加图片 )
-        解析 html 标签，转换为对应的格式。图片存放形式
+- [] 3、 支持 html( 加粗, 斜体, 下划线, 代码, 添加图片 )
+  解析 html 标签，转换为对应的格式。图片存放形式
 
 ### 开发/测试环境
 
