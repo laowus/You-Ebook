@@ -16,6 +16,7 @@
     "pack": "cross-env NODE_ENV=prod electron-builder"
   },
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "chardet": "^2.1.0",
     "electron-store": "^8.0.1",
     "element-plus": "^2.9.8",
@@ -34,8 +35,8 @@
     "cross-env": "^7.0.3",
     "electron": "^35.1.4",
     "electron-builder": "^26.0.12",
-    "wait-on": "^6.0.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "wait-on": "^6.0.1"
   },
   "build": {
     "appId": "xyz.hxl.youebook",

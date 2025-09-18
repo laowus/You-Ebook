@@ -18,7 +18,6 @@ let tocView;
 //重新布局目录
 // 如果curhref 为空 就获取curhref 第一个
 const updateTocView = (curhref) => {
-  console.log("重新Toc", toRaw(toc.value));
   const _book = {
     id: metaData.value.bookId,
     toc: toRaw(toc.value),
@@ -47,15 +46,12 @@ const updateTocView = (curhref) => {
 };
 
 const onDrop = (fromHref, toHref) => {
-  console.log("拖动的 href:", fromHref);
-  console.log("目标的 href:", toHref);
   moveToc(fromHref, toHref);
 };
 EventBus.on("addChapter", (res) => {
   addTocByHref(res.href, res.chapter); //添加到数据库
 });
 const showContextMenu = (event, href) => {
-  console.log("showContextMenu", href);
   event.preventDefault();
   setTimeout(() => {
     //初始化菜单数据

@@ -80,7 +80,6 @@ const getCurrentLine = () => {
 
   const visualLineNumber = getVisualLineNumber();
   currentLine.value = visualLineNumber;
-  console.log("视觉行号:", visualLineNumber);
 };
 // 设置行号方法
 const line = (n) => {
@@ -113,7 +112,6 @@ const handleSelectionChange = () => {
 watch(
   curChapter,
   (val) => {
-    console.log("curChapter", val);
     queueMicrotask(() => {
       const textarea = editArea.value;
       const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);

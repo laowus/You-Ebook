@@ -2,6 +2,7 @@ import { makeBook } from "./view.js";
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore.js";
 import EventBus from "../common/EventBus";
+const AdmZip = window.require("adm-zip");
 const path = window.require("path");
 const fs = window.require("fs");
 const { ipcRenderer } = window.require("electron");
@@ -52,50 +53,161 @@ const saveCoverToLocal = (coverData, coverPath) => {
 };
 
 export const open = async (file) => {
+  console.log("open=====", file);
   const { setToc, setMetaData, setFirst } = useBookStore();
   const { metaData, isFirst, toc } = storeToRefs(useBookStore());
+
+  // 将整个处理过程封装在一个 Promise 中
   return new Promise(async (resolve, reject) => {
-    const timestamp = Date.now();
-    const book = await makeBook(file);
-    console.log(book);
-    if (isFirst.value) {
-      const coverDir = ipcRenderer.sendSync("get-cover-dir", "ping");
-      let coverPath = "";
-      if (book.metadata.cover) {
-        coverPath = path.join(coverDir, timestamp + ".jpg");
-        await saveCoverToLocal(book.metadata.cover, coverPath);
-      }
-      let _metaData = {
-        title: book.metadata.title,
-        author: book.metadata.author.name,
-        description: book.metadata.description,
-        cover: coverPath,
-        path: file.path,
-      }; //把文件信息添加到数据库中
-      ipcRenderer.send("db-insert-book", _metaData);
-      ipcRenderer.once("db-insert-book-response", (event, res) => {
-        bookId = res.bookId;
-        setMetaData({ ..._metaData, bookId: bookId });
-        insertChapter(book, bookId).then(() => {
+    try {
+      const timestamp = Date.now();
+      // 1. 先解析书籍内容
+      const book = await makeBook(file.path);
+      console.log(book);
+
+      // 2. 处理书籍元数据和章节插入
+      if (isFirst.value) {
+        const coverDir = ipcRenderer.sendSync("get-cover-dir", "ping");
+        let coverPath = "";
+        if (book.metadata.cover) {
+          coverPath = path.join(coverDir, timestamp + ".jpg");
+          await saveCoverToLocal(book.metadata.cover, coverPath);
+        }
+        let _metaData = {
+          title: book.metadata.title,
+          author: book.metadata.author.name,
+          description: book.metadata.description,
+          cover: coverPath,
+          path: file.path,
+        };
+
+        // 插入书籍数据到数据库
+        ipcRenderer.send("db-insert-book", _metaData);
+        ipcRenderer.once("db-insert-book-response", async (event, res) => {
+          const bookId = res.bookId;
+          setMetaData({ ..._metaData, bookId: bookId });
+
+          // 3. 解压 EPUB 文件并处理图片
+          let imageMap = null;
+          if (file && file.path && file.path.endsWith(".epub")) {
+            try {
+              console.log("解压EPUB文件并处理图片", bookId);
+              const epubDir = ipcRenderer.sendSync("get-epub-dir", `${bookId}`);
+              // 调用修改后的unzipEpub函数，获取imageMap
+              const result = await unzipEpub(file.path, epubDir, bookId);
+              imageMap = result.imageMap;
+              console.log(`EPUB 文件已解压到: ${result.extractPath}`);
+            } catch (err) {
+              console.error("解压 EPUB 文件失败:", err);
+              // 解压失败不应阻止主流程
+            }
+          }
+
+          // 插入章节，传入imageMap
+          await insertChapter(book, bookId, imageMap);
           setFirst(false);
+
+          // 继续原流程
           const firstChapter = ipcRenderer.sendSync("db-first-chapter", bookId);
           resolve(firstChapter.data);
           EventBus.emit("updateToc", firstChapter.data.id);
           EventBus.emit("hideTip");
         });
-      });
-    } else {
-      const bookId = metaData.value.bookId;
-      insertChapter(book, bookId).then(() => {
+      } else {
+        const bookId = metaData.value.bookId;
+        // 3. 解压 EPUB 文件并处理图片
+        let imageMap = null;
+        if (file && file.path && file.path.endsWith(".epub")) {
+          try {
+            console.log("解压EPUB文件并处理图片", bookId);
+            const epubDir = ipcRenderer.sendSync("get-epub-dir", `${bookId}`);
+            // 调用修改后的unzipEpub函数，获取imageMap
+            const result = await unzipEpub(file.path, epubDir, bookId);
+            imageMap = result.imageMap;
+            console.log(`EPUB 文件已解压到: ${result.extractPath}`);
+          } catch (err) {
+            console.error("解压 EPUB 文件失败:", err);
+            // 解压失败不应阻止主流程
+          }
+        }
+
+        await insertChapter(book, bookId, imageMap);
+        // 继续原流程
         EventBus.emit("hideTip");
         EventBus.emit("updateToc", book.toc[0].href);
-      });
+        resolve();
+      }
+    } catch (error) {
+      reject(error);
+      console.error("处理书籍时出错:", error);
     }
   });
 };
 
-// 定义一个函数来提取 HTML 字符串中的纯文本
-const getTextFromHTML = (htmlString) => {
+const unzipEpub = (epubPath, extractPath, bookId) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const zip = new AdmZip(epubPath);
+      const zipEntries = zip.getEntries();
+
+      // 创建图片目录
+      const imagesDir = path.join(extractPath, "images");
+      if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir, { recursive: true });
+      }
+
+      // 存储原始图片路径和重命名后的路径的映射
+      const imageMap = new Map();
+
+      // 解压并处理图片文件
+      zipEntries.forEach((entry) => {
+        // 检查是否为图片文件
+        const ext = path.extname(entry.entryName).toLowerCase();
+        const imageExtensions = [
+          ".jpg",
+          ".jpeg",
+          ".png",
+          ".gif",
+          ".bmp",
+          ".webp",
+          ".svg",
+        ];
+
+        if (imageExtensions.includes(ext) && !entry.isDirectory) {
+          // 生成唯一的文件名，避免冲突
+          const uniqueName = `img_${bookId}_${Date.now()}_${Math.floor(
+            Math.random() * 1000
+          )}${ext}`;
+          const targetPath = path.join(imagesDir, uniqueName);
+
+          // 保存文件
+          fs.writeFileSync(targetPath, entry.getData());
+
+          // 记录原始路径和新路径的映射
+          imageMap.set(entry.entryName, path.join("images", uniqueName));
+          console.log(
+            `已提取并重命名图片: ${entry.entryName} -> ${uniqueName}`
+          );
+        } else if (!entry.isDirectory) {
+          // 处理非图片文件，但不重命名
+          const targetPath = path.join(extractPath, entry.entryName);
+          const targetDir = path.dirname(targetPath);
+          if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+          }
+          fs.writeFileSync(targetPath, entry.getData());
+        }
+      });
+
+      resolve({ extractPath, imageMap });
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
+// 修改getTextFromHTML函数，添加图片路径映射参数
+const getTextFromHTML = (htmlString, imageMap = null) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, "text/html");
 
@@ -104,8 +216,23 @@ const getTextFromHTML = (htmlString) => {
     if (node.nodeType === Node.TEXT_NODE) {
       return node.textContent;
     } else if (node.nodeName === "IMG") {
-      // 保留 img 标签的原始 HTML 获取img的src属性
-      const src = node.getAttribute("src");
+      // 获取原始src属性
+      let src = node.getAttribute("src");
+      if (src && imageMap && imageMap.size > 0) {
+        // 查找对应的新路径
+        // 由于路径格式可能不同，我们需要进行模糊匹配
+        let found = false;
+        for (let [originalPath, newPath] of imageMap.entries()) {
+          if (src.includes(path.basename(originalPath))) {
+            node.setAttribute("src", newPath);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          console.log(`未找到匹配的图片路径: ${src}`);
+        }
+      }
       return node.outerHTML;
     } else {
       let result = "";
@@ -124,15 +251,16 @@ const iCTip = (text) => {
   EventBus.emit("showTip", text);
 };
 
-// 插入章节以及内容加入数据库
-const insertChapter = async (book, bookId) => {
+// 修改insertChapter函数，添加imageMap参数
+const insertChapter = async (book, bookId, imageMap = null) => {
   // [href, content]
   const insertTocItem = async (item, parentid = null) => {
     const res = await book.resolveHref(item.href);
     // 等待 createDocument 完成
     const doc = await book.sections[res.index].createDocument();
-    console.log("doc", doc);
-    const str = doc.documentElement.outerHTML;
+    // 调用修改后的getTextFromHTML函数，传入imageMap
+    const str = getTextFromHTML(doc.documentElement.outerHTML, imageMap);
+
     // 封装发送请求和监听响应为一个 Promise
     await new Promise((resolve, reject) => {
       const successListener = (res) => {
@@ -159,6 +287,7 @@ const insertChapter = async (book, bookId) => {
       }
     }
   };
+
   // 使用 entries() 方法获取索引和元素
   for (const [index, tocItem] of book.toc.entries()) {
     iCTip(

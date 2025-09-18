@@ -275,6 +275,30 @@ ipcMain.on("export-txt", async (event, { chapters, metaData }) => {
   }
 });
 
+// 解压epub文件到指定目录
+ipcMain.on("unzip-epub", (event, { epubPath, destDir }) => {
+  try {
+    extract(epubPath, destDir, (err) => {
+      if (err) {
+        event.sender.send("unzip-epub-reply", {
+          success: false,
+          message: "文件解压失败,请重试或者检查文件!",
+        });
+      } else {
+        event.sender.send("unzip-epub-reply", {
+          success: true,
+          message: "文件解压成功!",
+        });
+      }
+    });
+  } catch (error) {
+    event.sender.send("unzip-epub-reply", {
+      success: false,
+      message: "文件解压失败,请重试或者检查文件!",
+    });
+  }
+});
+
 const txtToHtmlString = (txt, title) => {
   // 先按两个及以上换行符分割成段落
   const paragraphs = txt.split(/\n{2,}/);
