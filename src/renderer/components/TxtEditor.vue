@@ -194,6 +194,10 @@ const formattedContent = computed(() => {
 
   return curStr;
 });
+
+const addImage = () => {
+  //上传图片 并把图片添加到当前行中.
+};
 </script>
 
 <template>
@@ -202,9 +206,13 @@ const formattedContent = computed(() => {
       <button @click="curTabIndex = 0" :class="{ active: curTabIndex === 0 }">
         编辑
       </button>
-      
       <button @click="curTabIndex = 1" :class="{ active: curTabIndex === 1 }">
         预览
+      </button>
+    </div>
+    <div class="edit-bar" v-if="curTabIndex === 0">
+      <button class="btn-icon">
+        <span class="iconfont icon-tianjiatupian"></span>
       </button>
     </div>
     <div class="line-edit-wrapper" v-if="curTabIndex === 0">
@@ -238,6 +246,23 @@ const formattedContent = computed(() => {
 </template>
 
 <style>
+.edit-bar {
+  height: 30px;
+  display: flex;
+  flex-direction: row;
+  background-color: white;
+}
+
+.edit-bar .iconfont {
+  font-size: 1rem;
+  color: green;
+}
+
+.edit-bar .btn-icon:hover {
+  background-color: #ffffcc;
+
+}
+
 .out-editor {
   width: 100%;
   height: 100%;
