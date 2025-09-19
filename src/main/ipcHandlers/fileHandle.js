@@ -1,4 +1,4 @@
-const { ipcMain, app } = require("electron");
+const { ipcMain, app, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { ensureDirectoryExists } = require("../common");
@@ -35,6 +35,39 @@ const fileHandle = () => {
     console.log("cur-image-dir", imageDirBook);
     ensureDirectoryExists(imageDirBook);
     event.returnValue = imageDirBook;
+  });
+
+  ipcMain.handle("select-image", async (event, bookId) => {
+    const result = await dialog.showOpenDialog({
+      filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "gif"] }],
+      properties: ["openFile"],
+    });
+
+    if (result.canceled) return null;
+    const epubDirBook = path.join(epubDir, bookId);
+    const imageDirBook = path.join(epubDirBook, "images");
+    console.log("select-image", imageDirBook);
+    ensureDirectoryExists(imageDirBook);
+
+    const timestamp = Date.now();
+    //获取文件的扩展名
+    const ext = path.extname(result.filePaths[0]);
+    //生成新的文件名
+    const destFileName = `img_${timestamp}${ext}`;
+    // 新文件路径
+    const destPath = path.join(imageDirBook, destFileName);
+    // 复制文件到新路径
+    try {
+      // 复制文件到新路径
+      fs.copyFileSync(result.filePaths[0], destPath);
+      console.log("图片复制成功，文件名:", destFileName);
+      // 复制成功后返回文件名
+      return destFileName;
+    } catch (error) {
+      console.error("图片复制失败:", error);
+      // 抛出错误以便渲染进程捕获
+      throw new Error("图片复制失败: " + error.message);
+    }
   });
 };
 

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, inject, watch, onMounted, toRaw, computed } from "vue";
 const { ipcRenderer } = window.require("electron");
+import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore";
 const { curChapter } = storeToRefs(useBookStore());
@@ -12,6 +13,48 @@ const barArea = ref(null);
 const currentLine = ref(0); // 当前光标所在行
 
 const curTabIndex = ref(0);
+
+// 添加选中状态跟踪变量
+const isTextSelected = ref(false);
+
+// 添加斜体格式化功能
+const formatTag = (tag) => {
+  if (!editArea.value || !isTextSelected.value) return;
+
+  const textarea = editArea.value;
+  const { selectionStart, selectionEnd, value } = textarea;
+
+  // 获取选中的文本
+  const selectedText = value.substring(selectionStart, selectionEnd);
+  consolelog("selectedText", selectedText);
+  //判断selectedText 是否包含tag
+  if (selectedText === "" || selectedText.length === 0) {
+    ElMessage({
+      message: "请先选择文本",
+      type: "warning",
+    });
+    return;
+  }
+  const formattedText = `<${tag}>${selectedText}</${tag}>`;
+
+  // 更新文本内容
+  const newContent =
+    value.substring(0, selectionStart) +
+    formattedText +
+    value.substring(selectionEnd);
+
+  // 保存当前章节内容
+  curChapter.value.content = newContent;
+
+  // 恢复光标位置（考虑添加的标记长度）
+  queueMicrotask(() => {
+    textarea.focus();
+    textarea.setSelectionRange(
+      selectionStart,
+      selectionEnd + 2 // 加上两个星号的长度
+    );
+  });
+};
 
 // 计算当前行的背景渐变
 const highlightBackground = computed(() => {
@@ -109,6 +152,11 @@ const scrollRightWrapperToTop = () => {
 // 监听光标位置变化
 const handleSelectionChange = () => {
   getCurrentLine();
+  // 检查是否有文本被选中
+  if (editArea.value) {
+    const { selectionStart, selectionEnd } = editArea.value;
+    isTextSelected.value = selectionStart !== selectionEnd;
+  }
 };
 
 watch(
@@ -196,7 +244,46 @@ const formattedContent = computed(() => {
 });
 
 const addImage = () => {
-  //上传图片 并把图片添加到当前行中.
+  if (!editArea.value) return;
+
+  // 调用Electron对话框选择图片
+  ipcRenderer
+    .invoke("select-image", `${curChapter.value?.bookId}`)
+    .then((imagePath) => {
+      if (!imagePath) return; // 用户取消选择
+
+      // 上传图片并获取URL（这里需要根据实际上传逻辑修改）
+      // 假设上传成功后返回图片URL
+      const imgUrl = imagePath;
+
+      // 创建图片标签
+      const imgTag = `<img src="images\${imgUrl}">`;
+
+      const textarea = editArea.value;
+      const { selectionStart, selectionEnd, value } = textarea;
+
+      // 在光标位置插入图片标签
+      const newContent =
+        value.substring(0, selectionStart) +
+        imgTag +
+        value.substring(selectionEnd);
+
+      // 更新内容
+      curChapter.value.content = newContent;
+
+      // 移动光标到图片标签后面
+      queueMicrotask(() => {
+        textarea.focus();
+        textarea.setSelectionRange(
+          selectionStart + imgTag.length,
+          selectionStart + imgTag.length
+        );
+      });
+    })
+    .catch((err) => {
+      console.error("图片选择失败:", err);
+      ElMessage.error("图片选择失败");
+    });
 };
 </script>
 
@@ -211,8 +298,22 @@ const addImage = () => {
       </button>
     </div>
     <div class="edit-bar" v-if="curTabIndex === 0">
-      <button class="btn-icon">
+      <button class="btn-icon-small" title="添加图片" @click="addImage">
         <span class="iconfont icon-tianjiatupian"></span>
+      </button>
+      <button
+        class="btn-icon-small"
+        title="斜体"
+        @click="formatTag('i')"
+        :disabled="!isTextSelected"
+      >
+        <span class="iconfont icon-zitixieti"></span>
+      </button>
+      <button class="btn-icon-small" title="下划线" @click="formatTag('u')">
+        <span class="iconfont icon-zitixiahuaxian"></span>
+      </button>
+      <button class="btn-icon-small" title="加粗" @click="formatTag('b')">
+        <span class="iconfont icon-zitijiacu"></span>
       </button>
     </div>
     <div class="line-edit-wrapper" v-if="curTabIndex === 0">
@@ -247,22 +348,16 @@ const addImage = () => {
 
 <style>
 .edit-bar {
-  height: 30px;
+  height: 28px;
   display: flex;
   flex-direction: row;
   background-color: white;
+  /* 添加垂直居中对齐 */
+  align-items: center;
+  /* 设置内边距：上下5px，左边10px */
+  padding: 5px 0 5px 20px;
+  gap: 20px;
 }
-
-.edit-bar .iconfont {
-  font-size: 1rem;
-  color: green;
-}
-
-.edit-bar .btn-icon:hover {
-  background-color: #ffffcc;
-
-}
-
 .out-editor {
   width: 100%;
   height: 100%;
@@ -275,27 +370,53 @@ const addImage = () => {
   background-color: #f0efe2;
   display: flex;
   flex-direction: row;
-}
-.top-bar button {
-  height: 100%;
-  padding: 0 10px;
-  background: none;
-  border: none;
-  border-style: none;
-  outline: none;
-  cursor: pointer;
-  font-size: 14px;
-  color: #333;
-  transition: background-color 0.3s ease;
+  gap: 5px;
 }
 
-.top-bar button:focus,
-.top-bar button:focus-visible {
-  outline: none !important;
-  border: none !important;
+.top-bar button {
+  cursor: pointer;
+  font-size: 12px;
+  color: #333;
+  transition: background-color 0.3s, color 0.3s;
+  padding-left: 2%;
+  padding-right: 20px;
+  justify-content: center;
+  align-items: center;
 }
+
 .top-bar button.active {
-  background-color: #e0e0e0;
+  background-color: #ffffcc;
+  color: #000;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.btn-icon-small {
+  height: 1.5rem;
+  width: 1.5rem;
+  cursor: pointer;
+  /* 添加flex布局确保图标居中 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 添加透明边框避免hover时布局跳动 */
+  border: 1px solid #ccc;
+  /* 圆角美化 */
+  border-radius: 4px;
+  /* 过渡动画使效果更平滑 */
+  transition: all 0.2s ease;
+}
+.btn-icon-small:hover {
+  background-color: #ffffcc;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  /* 优化边框样式 */
+  border: 1px solid #eee;
+}
+
+.btn-icon-small .iconfont {
+  font-size: 1.2rem;
+  color: green;
 }
 
 .line-edit-wrapper {
@@ -313,6 +434,7 @@ const addImage = () => {
   background-color: white !important;
   overflow: hidden; /* 防止容器本身滚动 */
 }
+
 .preview-content {
   padding: 20px;
   width: 100%;
@@ -325,7 +447,10 @@ const addImage = () => {
   margin-bottom: 16px; /* 设置段落间距 */
   line-height: 1.6; /* 设置行高 */
 }
-
+/* 添加斜体样式 */
+.preview-content i {
+  font-style: italic;
+}
 .preview-content img {
   max-width: 80%;
   height: auto;
