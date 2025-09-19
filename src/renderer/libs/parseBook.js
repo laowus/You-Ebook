@@ -143,7 +143,13 @@ export const open = async (file) => {
     }
   });
 };
-
+/**
+ *
+ * @param {*} epubPath epub 文件路径
+ * @param {*} extractPath 解压路径
+ * @param {*} bookId 书籍id 用于生成图片文件夹名
+ * @returns
+ */
 const unzipEpub = (epubPath, extractPath, bookId) => {
   return new Promise((resolve, reject) => {
     try {
@@ -175,9 +181,7 @@ const unzipEpub = (epubPath, extractPath, bookId) => {
 
         if (imageExtensions.includes(ext) && !entry.isDirectory) {
           // 生成唯一的文件名，避免冲突
-          const uniqueName = `img_${bookId}_${Date.now()}_${Math.floor(
-            Math.random() * 1000
-          )}${ext}`;
+          const uniqueName = `${generateCustomShortId()}${ext}`;
           const targetPath = path.join(imagesDir, uniqueName);
 
           // 保存文件
@@ -188,15 +192,16 @@ const unzipEpub = (epubPath, extractPath, bookId) => {
           console.log(
             `已提取并重命名图片: ${entry.entryName} -> ${uniqueName}`
           );
-        } else if (!entry.isDirectory) {
-          // 处理非图片文件，但不重命名
-          const targetPath = path.join(extractPath, entry.entryName);
-          const targetDir = path.dirname(targetPath);
-          if (!fs.existsSync(targetDir)) {
-            fs.mkdirSync(targetDir, { recursive: true });
-          }
-          fs.writeFileSync(targetPath, entry.getData());
         }
+        // else if (!entry.isDirectory) {
+        //   // 处理非图片文件，但不重命名
+        //   const targetPath = path.join(extractPath, entry.entryName);
+        //   const targetDir = path.dirname(targetPath);
+        //   if (!fs.existsSync(targetDir)) {
+        //     fs.mkdirSync(targetDir, { recursive: true });
+        //   }
+        //   fs.writeFileSync(targetPath, entry.getData());
+        // }
       });
 
       resolve({ extractPath, imageMap });
@@ -206,12 +211,40 @@ const unzipEpub = (epubPath, extractPath, bookId) => {
   });
 };
 
-// 修改getTextFromHTML函数，添加图片路径映射参数
+const generateCustomShortId = () => {
+  // 获取时间戳的后8位
+  const timestamp = Date.now().toString().slice(-8);
+  // 生成随机数
+  const random = Math.random().toString(36).substring(2, 8);
+  return timestamp + random;
+};
+
+// 修改getTextFromHTML函数，添加图片路径映射参数并保留格式标签
 const getTextFromHTML = (htmlString, imageMap = null) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, "text/html");
 
-  // 递归处理节点，保留 img 标签，其他转为文本
+  // 定义需要保留的格式标签
+  const preserveTags = [
+    "B",
+    "STRONG", // 加粗
+    "I",
+    "EM", // 斜体
+    "U", // 下划线
+    "BR",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6", // 结构标签
+    "UL",
+    "OL",
+    "LI", // 列表
+    "IMG", // 图片（已保留）
+  ];
+
+  // 递归处理节点，保留指定的标签和图片
   function processNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
       return node.textContent;
@@ -234,6 +267,47 @@ const getTextFromHTML = (htmlString, imageMap = null) => {
         }
       }
       return node.outerHTML;
+    } else if (node.nodeName === "P") {
+      // 处理p标签：替换为换行符
+      let result = "\n";
+      for (let child of node.childNodes) {
+        result += processNode(child);
+      }
+      result += "\n";
+      return result;
+    } else if (node.nodeName === "DIV") {
+      // 处理div标签：去掉标签但保留内容
+      let result = "";
+      for (let child of node.childNodes) {
+        result += processNode(child);
+      }
+      return result;
+    } else if (preserveTags.includes(node.nodeName)) {
+      // 对于其他需要保留的格式标签，保留标签结构
+      let result = `<${node.nodeName.toLowerCase()}`;
+
+      // 保留所有属性
+      for (let i = 0; i < node.attributes.length; i++) {
+        const attr = node.attributes[i];
+        // 跳过已经处理过的src属性
+        if (!(node.nodeName === "IMG" && attr.name === "src")) {
+          result += ` ${attr.name}="${attr.value}"`;
+        }
+      }
+
+      result += ">";
+
+      // 处理子节点
+      for (let child of node.childNodes) {
+        result += processNode(child);
+      }
+
+      // 添加结束标签
+      if (!["BR"].includes(node.nodeName)) {
+        result += `</${node.nodeName.toLowerCase()}>`;
+      }
+
+      return result;
     } else {
       let result = "";
       // 遍历子节点

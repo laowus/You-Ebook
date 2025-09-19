@@ -11,6 +11,8 @@ const editArea = ref(null);
 const barArea = ref(null);
 const currentLine = ref(0); // 当前光标所在行
 
+const curTabIndex = ref(0);
+
 // 计算当前行的背景渐变
 const highlightBackground = computed(() => {
   if (!editArea.value) return "";
@@ -158,39 +160,150 @@ onMounted(() => {
   // 组件挂载时滚动到顶部
   scrollRightWrapperToTop();
 });
+
+// 添加在已有的computed部分
+const formattedContent = computed(() => {
+  // 获取图片存储位置
+  const imageDir = ipcRenderer.sendSync(
+    "get-image-dir",
+    `${curChapter.value?.bookId}`
+  );
+
+  if (!curChapter.value?.content) return "";
+
+  // 将内容按换行符分割，过滤掉空行，然后用<p>标签包裹
+  // 替换图片路径 src="images\74823574491o4d.jpeg"
+  // images 替换 imageDir
+  const curStr = curChapter.value.content
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => {
+      // 替换图片路径
+      if (line.includes("src=")) {
+        // 将路径中的"images"替换为imageDir变量
+        // 替换 \ 为 /
+        return line.replace(
+          /images\\/,
+          `file:///${imageDir.replace(/\\/g, "/")}/`
+        );
+      }
+      return `<p>${line}</p>`;
+    })
+    .join("\n");
+  console.log("formattedContent", curStr);
+
+  return curStr;
+});
 </script>
 
 <template>
-  <div class="line-edit-wrapper">
-    <div class="left-bar-wrapper">
-      <textarea
-        ref="barArea"
-        v-model="barValue"
-        class="bar-area"
-        wrap="off"
-        cols="2"
-        disabled
-      />
+  <div class="out-editor">
+    <div class="top-bar">
+      <button @click="curTabIndex = 0" :class="{ active: curTabIndex === 0 }">
+        编辑
+      </button>
+      
+      <button @click="curTabIndex = 1" :class="{ active: curTabIndex === 1 }">
+        预览
+      </button>
     </div>
-    <div class="rigth-edit-wrapper">
-      <textarea
-        ref="editArea"
-        v-model="curChapter.content"
-        class="edit-area"
-        name="content"
-        @scroll="syncScrollTop"
-        :style="{ backgroundImage: highlightBackground }"
-      />
+    <div class="line-edit-wrapper" v-if="curTabIndex === 0">
+      <div class="left-bar-wrapper">
+        <textarea
+          ref="barArea"
+          v-model="barValue"
+          class="bar-area"
+          wrap="off"
+          cols="2"
+          disabled
+        />
+      </div>
+      <div class="rigth-edit-wrapper">
+        <textarea
+          ref="editArea"
+          v-model="curChapter.content"
+          class="edit-area"
+          name="content"
+          @scroll="syncScrollTop"
+          :style="{ backgroundImage: highlightBackground }"
+        />
+      </div>
+    </div>
+    <div class="preview-wrapper" v-if="curTabIndex === 1">
+      <div class="preview-content">
+        <div v-html="formattedContent"></div>
+      </div>
     </div>
   </div>
 </template>
 
 <style>
+.out-editor {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.top-bar {
+  width: 100%;
+  height: 30px;
+  background-color: #f0efe2;
+  display: flex;
+  flex-direction: row;
+}
+.top-bar button {
+  height: 100%;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  border-style: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background-color 0.3s ease;
+}
+
+.top-bar button:focus,
+.top-bar button:focus-visible {
+  outline: none !important;
+  border: none !important;
+}
+.top-bar button.active {
+  background-color: #e0e0e0;
+}
+
 .line-edit-wrapper {
-  width: 60%;
+  width: 100%;
   display: flex;
   flex-direction: row;
   flex: 1;
+}
+
+.preview-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  background-color: white !important;
+  overflow: hidden; /* 防止容器本身滚动 */
+}
+.preview-content {
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto; /* 内容超出时显示垂直滚动条 */
+  overflow-x: hidden; /* 禁止水平滚动 */
+  margin-bottom: 10px;
+}
+.preview-content p {
+  margin-bottom: 16px; /* 设置段落间距 */
+  line-height: 1.6; /* 设置行高 */
+}
+
+.preview-content img {
+  max-width: 80%;
+  height: auto;
 }
 
 .left-bar-wrapper {

@@ -1,6 +1,11 @@
-const { ipcMain } = require("electron");
+const { ipcMain, app } = require("electron");
+const path = require("path");
+const fs = require("fs");
+const dataPath = path.join(app.getPath("userData"), "bookdata");
+const epubDir = path.join(dataPath, "epub");
 const JSZip = require("jszip");
 const { getChap } = require("./dbtool");
+
 // 递归生成 navPoints 的函数
 const generateNavPoints = (chapters, parentPlayOrder = 1) => {
   let currentPlayOrder = parentPlayOrder;
@@ -51,7 +56,7 @@ const formatText = (text) => {
 const createEpub = async (chapters, metadata, mainWin) => {
   return new Promise((resolve, reject) => {
     try {
-      const { author, title, cover } = metadata; // 从 metadata 中获取封面路径
+      const { author, title, cover, bookId } = metadata; // 从 metadata 中获取封面路径
       const zip = new JSZip();
       zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
       zip.folder("META-INF").file(
@@ -70,6 +75,41 @@ const createEpub = async (chapters, metadata, mainWin) => {
         const coverData = fs.readFileSync(cover);
         const coverFileName = "cover.jpg"; // 假设封面图片为 JPG 格式
         zip.folder("OEBPS").file(coverFileName, coverData);
+      }
+
+      //获取epub文件目录
+      const imagesDir = path.join(epubDir, `${bookId}`, "images");
+      console.log("存放当前编辑epub的图片目录", imagesDir);
+      // 检查图片目录是否存在且不为空
+      if (fs.existsSync(imagesDir) && fs.readdirSync(imagesDir).length > 0) {
+        // 获取imagesDir目录下的所有文件
+        /**
+         *
+         * @param {*} dir   图片目录
+         * @param {*} zipPath  图片在epub文件中的路径
+         */
+        const addFilesToZip = (dir, zipPath) => {
+          const files = fs.readdirSync(dir);
+
+          files.forEach((file) => {
+            const filePath = path.join(dir, file);
+            const stats = fs.statSync(filePath);
+
+            if (stats.isDirectory()) {
+              // 递归处理子目录
+              addFilesToZip(filePath, `${zipPath}/${file}`);
+            } else {
+              // 添加文件到ZIP
+              zip
+                .folder("OEBPS")
+                .folder("images")
+                .file(file, fs.readFileSync(filePath));
+            }
+          });
+        };
+
+        // 开始添加文件
+        addFilesToZip(imagesDir, "images");
       }
 
       // 调用递归函数生成 navPoints

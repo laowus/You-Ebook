@@ -26,6 +26,16 @@ const fileHandle = () => {
     ensureDirectoryExists(epubDirBook);
     event.returnValue = epubDirBook;
   });
+
+  // 获取解压epub文件目录
+  // \ 替换为 /
+  ipcMain.on("get-image-dir", (event, bookId) => {
+    const epubDirBook = path.join(epubDir, bookId);
+    const imageDirBook = path.join(epubDirBook, "images");
+    console.log("cur-image-dir", imageDirBook);
+    ensureDirectoryExists(imageDirBook);
+    event.returnValue = imageDirBook;
+  });
 };
 
 module.exports = fileHandle;
