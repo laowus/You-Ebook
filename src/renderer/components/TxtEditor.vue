@@ -1,131 +1,17 @@
 <script setup>
 import { ref, inject, watch, onMounted, toRaw, computed } from "vue";
 const { ipcRenderer } = window.require("electron");
-import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore";
-const { curChapter } = storeToRefs(useBookStore());
+const { curChapter, metaData, toc } = storeToRefs(useBookStore());
 
 const barValue = ref("1");
 const suffix = ref("\n");
 const editArea = ref(null);
 const barArea = ref(null);
-const currentLine = ref(0); // 当前光标所在行
 
 const curTabIndex = ref(0);
 
-// 添加选中状态跟踪变量
-const isTextSelected = ref(false);
-
-// 添加斜体格式化功能
-const formatTag = (tag) => {
-  if (!editArea.value || !isTextSelected.value) return;
-
-  const textarea = editArea.value;
-  const { selectionStart, selectionEnd, value } = textarea;
-
-  // 获取选中的文本
-  const selectedText = value.substring(selectionStart, selectionEnd);
-  console.log("selectedText", selectedText);
-  //判断selectedText 是否包含tag
-  if (selectedText === "" || selectedText.length === 0) {
-    ElMessage({
-      message: "请先选择文本",
-      type: "warning",
-    });
-    return;
-  }
-  const formattedText = `<${tag}>${selectedText}</${tag}>`;
-
-  // 更新文本内容
-  const newContent =
-    value.substring(0, selectionStart) +
-    formattedText +
-    value.substring(selectionEnd);
-
-  // 保存当前章节内容
-  curChapter.value.content = newContent;
-
-  // 恢复光标位置（考虑添加的标记长度）
-  queueMicrotask(() => {
-    textarea.focus();
-    textarea.setSelectionRange(
-      selectionStart,
-      selectionEnd + 2 // 加上两个星号的长度
-    );
-  });
-};
-
-// 计算当前行的背景渐变
-const highlightBackground = computed(() => {
-  if (!editArea.value) return "";
-
-  const lineHeight = 28; // 与CSS中的line-height保持一致
-  const currentLinePos = (currentLine.value - 1) * lineHeight;
-
-  // 获取文本区域的实际滚动高度
-  const scrollHeight = editArea.value.scrollHeight;
-  // 创建黄色高亮的渐变
-  return `repeating-linear-gradient(
-    transparent 0px,
-    transparent ${currentLinePos}px,
-    yellow ${currentLinePos}px,
-    yellow ${currentLinePos + lineHeight}px,
-    transparent ${currentLinePos + lineHeight}px,
-    transparent ${scrollHeight}px
-  ), repeating-linear-gradient(#eee 0 1px, transparent 1px ${lineHeight}px)`;
-});
-
-const getVisualLineNumber = () => {
-  if (!editArea.value) return 1;
-
-  const textarea = editArea.value;
-  const cursorPos = textarea.selectionStart;
-
-  // 创建一个与textarea样式相同的临时div元素
-  const temp = document.createElement("div");
-
-  // 设置与textarea相同的样式，确保文本渲染效果一致
-  temp.style.cssText = `
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-    font: inherit;
-    font-size: ${getComputedStyle(textarea).fontSize};
-    font-family: ${getComputedStyle(textarea).fontFamily};
-    line-height: ${getComputedStyle(textarea).lineHeight};
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    width: ${textarea.clientWidth}px;
-    padding: ${getComputedStyle(textarea).padding};
-    margin: ${getComputedStyle(textarea).margin};
-    border: ${getComputedStyle(textarea).border};
-    box-sizing: ${getComputedStyle(textarea).boxSizing};
-  `;
-
-  // 填充文本直到光标位置
-  temp.textContent = textarea.value.substring(0, cursorPos);
-
-  // 将临时元素添加到文档中以计算高度
-  document.body.appendChild(temp);
-
-  // 获取行高和临时元素高度，计算视觉行数
-  const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
-  const visualLineCount = Math.ceil(temp.clientHeight / lineHeight);
-
-  // 移除临时元素
-  document.body.removeChild(temp);
-
-  return visualLineCount;
-};
-
-// 获取光标所在行
-const getCurrentLine = () => {
-  if (!editArea.value) return;
-
-  const visualLineNumber = getVisualLineNumber();
-  currentLine.value = visualLineNumber;
-};
 // 设置行号方法
 const line = (n) => {
   let num = "";
@@ -139,23 +25,13 @@ const line = (n) => {
 const syncScrollTop = () => {
   if (barArea.value && editArea.value) {
     barArea.value.scrollTop = editArea.value.scrollTop;
-    handleSelectionChange();
   }
 };
 // 滚动到顶部的方法
 const scrollRightWrapperToTop = () => {
   if (editArea.value) {
+    console.log("滚动到顶部");
     editArea.value.scrollTop = 0;
-  }
-};
-// 监听 value 变化
-// 监听光标位置变化
-const handleSelectionChange = () => {
-  getCurrentLine();
-  // 检查是否有文本被选中
-  if (editArea.value) {
-    const { selectionStart, selectionEnd } = editArea.value;
-    isTextSelected.value = selectionStart !== selectionEnd;
   }
 };
 
@@ -183,13 +59,16 @@ watch(
   { immediate: true, deep: true }
 );
 
+watch(
+  () => curChapter.value?.title,
+  (newTitle, oldTitle) => {
+    scrollRightWrapperToTop();
+  },
+  { immediate: true, deep: true } // 设置 immediate: true 会在组件初始化时立即执行一次
+);
+
 onMounted(() => {
   if (editArea.value) {
-    // 监听光标位置变化
-    editArea.value.addEventListener("click", handleSelectionChange);
-    editArea.value.addEventListener("keyup", handleSelectionChange);
-    editArea.value.addEventListener("input", handleSelectionChange);
-
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         if (entry.contentRect.width !== entry.borderBoxSize[0].inlineSize) {
@@ -200,11 +79,9 @@ onMounted(() => {
           line(rows);
         }
       }
-      handleSelectionChange();
     });
     observer.observe(editArea.value);
   }
-
   // 组件挂载时滚动到顶部
   scrollRightWrapperToTop();
 });
@@ -240,6 +117,36 @@ const formattedContent = computed(() => {
   return curStr;
 });
 
+// 添加斜体格式化功能
+const formatTag = (tag) => {
+  if (!editArea.value) return;
+
+  const textarea = editArea.value;
+  const { selectionStart, selectionEnd, value } = textarea;
+
+  // 获取选中的文本
+  const selectedText = value.substring(selectionStart, selectionEnd);
+  console.log("selectedText", selectedText);
+  //判断selectedText 是否包含tag
+  if (selectedText === "" || selectedText.length === 0) {
+    ElMessage({
+      message: "请先选择文本",
+      type: "warning",
+    });
+    return;
+  }
+  const formattedText = `<${tag}>${selectedText}</${tag}>`;
+
+  // 更新文本内容
+  const newContent =
+    value.substring(0, selectionStart) +
+    formattedText +
+    value.substring(selectionEnd);
+
+  // 保存当前章节内容
+  curChapter.value.content = newContent;
+};
+
 const addImage = () => {
   if (!editArea.value) return;
 
@@ -252,7 +159,7 @@ const addImage = () => {
       const imgUrl = imagePath;
 
       // 创建图片标签
-      const imgTag = `<img src="images\${imgUrl}">`;
+      const imgTag = `<img src="images\\${imgUrl}">`;
 
       const textarea = editArea.value;
       const { selectionStart, selectionEnd, value } = textarea;
@@ -265,15 +172,6 @@ const addImage = () => {
 
       // 更新内容
       curChapter.value.content = newContent;
-
-      // 移动光标到图片标签后面
-      queueMicrotask(() => {
-        textarea.focus();
-        textarea.setSelectionRange(
-          selectionStart + imgTag.length,
-          selectionStart + imgTag.length
-        );
-      });
     })
     .catch((err) => {
       console.error("图片选择失败:", err);
@@ -296,12 +194,7 @@ const addImage = () => {
       <button class="btn-icon-small" title="添加图片" @click="addImage">
         <span class="iconfont icon-tianjiatupian"></span>
       </button>
-      <button
-        class="btn-icon-small"
-        title="斜体"
-        @click="formatTag('i')"
-        :disabled="!isTextSelected"
-      >
+      <button class="btn-icon-small" title="斜体" @click="formatTag('i')">
         <span class="iconfont icon-zitixieti"></span>
       </button>
       <button class="btn-icon-small" title="下划线" @click="formatTag('u')">
@@ -329,7 +222,6 @@ const addImage = () => {
           class="edit-area"
           name="content"
           @scroll="syncScrollTop"
-          :style="{ backgroundImage: highlightBackground }"
         />
       </div>
     </div>
@@ -343,7 +235,7 @@ const addImage = () => {
 
 <style>
 .edit-bar {
-  height: 28px;
+  height: 30px;
   display: flex;
   flex-direction: row;
   background-color: white;
@@ -353,6 +245,7 @@ const addImage = () => {
   padding: 5px 0 5px 20px;
   gap: 20px;
 }
+
 .out-editor {
   width: 100%;
   height: 100%;
@@ -446,6 +339,14 @@ const addImage = () => {
 .preview-content i {
   font-style: italic;
 }
+
+.preview-content u {
+  text-decoration: underline;
+}
+
+.preview-content b {
+  font-weight: bold;
+}
 .preview-content img {
   max-width: 80%;
   height: auto;
@@ -470,17 +371,26 @@ const addImage = () => {
   width: 100%;
   height: 100%;
   resize: none;
-  line-height: 28px;
-  font-size: 14px;
+  line-height: 30px;
+  font-size: 16px;
   float: left;
   padding: 0;
   color: black;
   font-family: inherit;
   box-sizing: border-box;
   padding-left: 5px;
-  /* background-size: 100% 28px; */
+  background-image: repeating-linear-gradient(#eee 0 1px, transparent 1px 30px);
+  background-size: 100% 30px;
   background-attachment: local;
-  transition: background-image 0.1s ease;
+}
+
+.rigth-edit-wrapper textarea {
+  caret-color: #ff0000; /* 将光标颜色设置为红色，可以根据需要修改 */
+  caret-width: 2px; /* 增加光标宽度，某些浏览器可能不支持 */
+}
+.rigth-edit-wrapper textarea:focus {
+  outline: none; /* 移除默认的聚焦轮廓 */
+  caret-color: #ff0000; /* 确保聚焦时光标颜色仍然明显 */
 }
 
 .bar-area {
@@ -493,7 +403,7 @@ const addImage = () => {
   border: 0;
   background: rgb(247, 247, 247);
   color: #999;
-  line-height: 28px;
+  line-height: 30px;
   font-size: 14px;
   padding: 0 5px;
   text-align: right;
