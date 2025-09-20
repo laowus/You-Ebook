@@ -380,7 +380,7 @@ const addImage = () => {
   font-family: inherit;
   box-sizing: border-box;
   padding-left: 5px;
-  background-image: repeating-linear-gradient(#eee 0 1px, transparent 1px 30px);
+  background-image: linear-gradient(to bottom, #ccc 1px, transparent 1px);
 
   background-size: 100% 30px;
   background-attachment: local;
