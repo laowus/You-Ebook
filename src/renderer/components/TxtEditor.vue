@@ -40,11 +40,12 @@ watch(
   (val) => {
     queueMicrotask(() => {
       const textarea = editArea.value;
+      console.log("textarea", textarea);
+      if (!textarea) return;
       const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
       const scrollHeight = textarea.scrollHeight;
       const rows = Math.ceil(scrollHeight / lineHeight);
       line(rows);
-      // scrollRightWrapperToTop();
       if (val && Object.keys(val).length > 0) {
         try {
           ipcRenderer.send("db-update-chapter", toRaw(val));
@@ -380,6 +381,7 @@ const addImage = () => {
   box-sizing: border-box;
   padding-left: 5px;
   background-image: repeating-linear-gradient(#eee 0 1px, transparent 1px 30px);
+
   background-size: 100% 30px;
   background-attachment: local;
 }

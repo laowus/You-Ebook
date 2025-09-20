@@ -4,10 +4,13 @@ const { app, BrowserWindow, ipcMain, Menu, dialog, Tray } = require("electron");
 const isDevEnv = process.env["NODE_ENV"] === "dev";
 const path = require("path");
 const fs = require("fs");
+const epubDir = path.join(app.getPath("userData"), "bookdata", "epub");
 const Store = require("electron-store");
 const store = new Store();
 const { createEpub } = require("./createEpub");
 const { createTxt } = require("./createTxt");
+const { createHtml } = require("./createHtml");
+
 const { initDatabase } = require("./dbtool");
 let resourcesRoot = path.resolve(app.getAppPath());
 let publicRoot = path.join(__dirname, "../../public");
@@ -247,7 +250,6 @@ ipcMain.on("export-txt", async (event, { chapters, metaData }) => {
       });
     } else {
       await createTxt(chapters, metaData, mainWin).then((txtContent) => {
-        console.log("Text", txtContent);
         if (mainWin && mainWin.webContents) {
           mainWin.webContents.send("hidetip");
         }
@@ -300,20 +302,34 @@ ipcMain.on("unzip-epub", (event, { epubPath, destDir }) => {
 });
 
 const txtToHtmlString = (txt, title) => {
-  // 先按两个及以上换行符分割成段落
-  const paragraphs = txt.split(/\n{2,}/);
-  // 对每个段落处理，将单个换行符替换为 <br> 标签
-  // 空格符号转义：将连续空格替换为 &nbsp;
-  const htmlParagraphs = paragraphs.map((paragraph) => {
-    // 转义空格
-    const escapedParagraph = paragraph.replace(/ {2,}/g, (match) => {
-      return "&nbsp;".repeat(match.length);
-    });
-    const lines = escapedParagraph.split("\n");
-    return `<p>${lines.join("<br>")}</p>`;
-  });
-  // 合并所有段落
-  const bodyContent = htmlParagraphs.join("");
+  // 去除多余的空行
+  const cleanTxt = txt.replace(/\n{3,}/g, "\n\n");
+
+  // 将文本按换行符分割成行
+  const lines = cleanTxt.split("\n");
+
+  // 处理每一行：
+  // 1. 跳过空行
+  // 2. 转义空格
+  // 3. 用 <p> 标签包裹每一行
+  const htmlLines = lines
+    .map((line) => {
+      // 跳过空行
+      if (!line.trim()) return "";
+
+      // 转义空格：将连续空格替换为 &nbsp;
+      const escapedLine = line.replace(/ {2,}/g, (match) => {
+        return "&nbsp;".repeat(match.length);
+      });
+
+      // 用 <p> 标签包裹每一行
+      return `<p>${escapedLine}</p>`;
+    })
+    .filter((line) => line !== ""); // 过滤掉空字符串
+
+  // 合并所有带标签的行
+  const bodyContent = htmlLines.join("");
+
   // 包裹完整的 HTML 结构
   return `
 <!DOCTYPE html>
@@ -322,12 +338,23 @@ const txtToHtmlString = (txt, title) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+      color: #333;
+    }
+    p {
+      margin: 8px 0;
+      text-align: justify;
+    }
+  </style>
 </head>
 <body>
   ${bodyContent}
 </body>
-</html>
-`.trim();
+</html>`;
 };
 
 // 监听重启程序请求
@@ -354,7 +381,7 @@ ipcMain.on("export-html", async (event, { chapters, metaData }) => {
         message: "用户取消保存",
       });
     } else {
-      await createTxt(chapters, metaData, mainWin).then((txtContent) => {
+      await createHtml(chapters, metaData, mainWin).then((txtContent) => {
         txtContent = txtToHtmlString(txtContent, metaData.title);
         if (mainWin && mainWin.webContents) {
           mainWin.webContents.send("hidetip");
@@ -366,6 +393,18 @@ ipcMain.on("export-html", async (event, { chapters, metaData }) => {
               message: "文件写入失败,请重试或者检查文件!",
             });
           } else {
+            const imagesDirBook = path.join(
+              epubDir,
+              `${metaData.bookId}`,
+              "images"
+            );
+            //加入存在图片文件夹，则复制图片
+            if (fs.existsSync(imagesDirBook)) {
+              const destDir = path.dirname(filePath);
+              const destImagesDir = path.join(destDir, "images");
+              console.log(imagesDirBook, "复制图片到:", destImagesDir);
+              copyDirectorySync(imagesDirBook, destImagesDir);
+            }
             event.sender.send("export-html-reply", {
               success: true,
               message: metaData.title + ".html 导出成功!",
@@ -382,6 +421,37 @@ ipcMain.on("export-html", async (event, { chapters, metaData }) => {
     });
   }
 });
+
+function copyDirectorySync(srcDir, destDir) {
+  try {
+    // 确保目标目录存在
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    // 读取源目录中的所有文件和子目录
+    const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+
+    // 遍历所有条目
+    for (const entry of entries) {
+      const srcPath = path.join(srcDir, entry.name);
+      const destPath = path.join(destDir, entry.name);
+
+      if (entry.isDirectory()) {
+        // 如果是目录，递归复制
+        copyDirectorySync(srcPath, destPath);
+      } else {
+        // 如果是文件，直接复制
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+    console.log(`成功复制目录: ${srcDir} -> ${destDir}`);
+  } catch (error) {
+    console.error(`复制目录失败: ${error.message}`);
+    throw error;
+  }
+}
+
 const init = () => {
   app.whenReady().then(async () => {
     await initDatabase();

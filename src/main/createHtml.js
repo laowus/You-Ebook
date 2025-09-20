@@ -4,12 +4,7 @@ const { getChap } = require("./dbtool");
 // 修改 generateTxt 函数，使其返回 Promise
 const generateTxt = async (chapters, metadata, mainWin) => {
   let localTxtContent = "";
-  // 添加 HTML 标签去除函数
-  const removeHtmlTags = (htmlString) => {
-    if (!htmlString) return "";
-    // 使用正则表达式去除 HTML 标签
-    return htmlString.replace(/<[^>]*>/g, "");
-  };
+
   for (const chapter of chapters) {
     const result = await getChap(metadata.bookId, chapter.href);
     // 发送进度信息给渲染进程
@@ -17,7 +12,7 @@ const generateTxt = async (chapters, metadata, mainWin) => {
       mainWin.webContents.send("showtip", chapter.label);
     }
     const content = result.success
-      ? chapter.label + "\n" + removeHtmlTags(result.data.content)
+      ? chapter.label + "\n" + result.data.content
       : "";
     localTxtContent += content;
 
@@ -31,7 +26,7 @@ const generateTxt = async (chapters, metadata, mainWin) => {
   return localTxtContent;
 };
 
-const createTxt = async (chapters, metadata, mainWin) => {
+const createHtml = async (chapters, metadata, mainWin) => {
   // 检查 chapters 是否为空
   if (!chapters || chapters.length === 0) {
     console.log("chapters 数组为空");
@@ -49,5 +44,5 @@ const createTxt = async (chapters, metadata, mainWin) => {
 };
 
 module.exports = {
-  createTxt,
+  createHtml,
 };
