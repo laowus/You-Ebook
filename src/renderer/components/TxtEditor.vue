@@ -26,7 +26,7 @@ const formatTag = (tag) => {
 
   // 获取选中的文本
   const selectedText = value.substring(selectionStart, selectionEnd);
-  consolelog("selectedText", selectedText);
+  console.log("selectedText", selectedText);
   //判断selectedText 是否包含tag
   if (selectedText === "" || selectedText.length === 0) {
     ElMessage({
@@ -219,9 +219,6 @@ const formattedContent = computed(() => {
 
   if (!curChapter.value?.content) return "";
 
-  // 将内容按换行符分割，过滤掉空行，然后用<p>标签包裹
-  // 替换图片路径 src="images\74823574491o4d.jpeg"
-  // images 替换 imageDir
   const curStr = curChapter.value.content
     .split("\n")
     .filter((line) => line.trim() !== "")
@@ -252,8 +249,6 @@ const addImage = () => {
     .then((imagePath) => {
       if (!imagePath) return; // 用户取消选择
 
-      // 上传图片并获取URL（这里需要根据实际上传逻辑修改）
-      // 假设上传成功后返回图片URL
       const imgUrl = imagePath;
 
       // 创建图片标签
