@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useAppStore } from "../store/appStore";
+import { ElMessage, ElMessageBox } from "element-plus";
 const { ipcRenderer } = window.require("electron");
 const { aboutShow } = storeToRefs(useAppStore());
 const tindex = ref(0);
@@ -46,31 +47,47 @@ const openDataDir = () => {
 
 // 在script部分末尾添加以下方法
 const backupData = () => {
+  ipcRenderer.once("backup-data-reply", (event, res) => {
+    if (res.success) {
+      ElMessage.success(res.message);
+    } else {
+      ElMessage.error(res.message);
+    }
+  });
   ipcRenderer.send("backup-data", dataDir.value);
-  // 可以添加提示信息
-  alert("备份操作已开始，请等待完成提示！");
 };
 
 const restoreData = () => {
   // 先确认是否覆盖现有数据
-  if (confirm("恢复数据将覆盖现有数据，确定要继续吗？")) {
-    ipcRenderer.send("restore-data", dataDir.value);
-    alert("恢复操作已开始，请等待完成提示！");
-  }
+  ElMessageBox.confirm("恢复数据将覆盖现有数据，确定要继续吗？", "恢复数据", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(() => {
+      ipcRenderer.once("restore-data-reply", (event, res) => {
+        if (res.success) {
+          // ElMessage.success(res.message);
+          // //给个提示框
+          ElMessageBox.alert(res.message, "数据恢复成功, 重启程序!", {
+            confirmButtonText: "确定",
+            type: "info",
+          }).then(() => {
+            ipcRenderer.send("restart-app");
+          });
+        } else {
+          ElMessage.error(res.message);
+        }
+      });
+      ipcRenderer.send("restore-data", dataDir.value);
+    })
+    .catch(() => {
+      ElMessage({
+        type: "info",
+        message: "已取消恢复数据",
+      });
+    });
 };
-
-// 监听备份和恢复完成的消息
-ipcRenderer.on("backup-complete", (event, message) => {
-  alert(message || "备份完成！");
-});
-
-ipcRenderer.on("restore-complete", (event, message) => {
-  alert(message || "恢复完成！");
-});
-
-ipcRenderer.on("operation-error", (event, error) => {
-  alert("操作失败：" + error);
-});
 </script>
 <template>
   <el-dialog v-model="aboutShow" title="关于" width="70%">
@@ -124,7 +141,15 @@ ipcRenderer.on("operation-error", (event, error) => {
               </p>
               <h2>备份/恢复操作：</h2>
               <p>
-                1、备份：点击备份按钮，会在数据保存位置创建一个备份文件夹，备份文件夹中包含了所有的书籍数据。
+                1、备份：点击备份按钮，会在数据保存位置生成一个压缩zip文件，备份文件中包含了所有的书籍数据。
+                <br />
+                功能1: 你可以在在其他电脑上安装捡书,
+                然后把这个备份文件复制到其他电脑的, 然后点击恢复按钮,
+                就可以恢复数据了。
+                <br />
+                功能2:
+                你可以恢复某个时间的数据。操作错误或者误删，可以恢复到之前。
+                <br />
                 2、恢复：如果您需要恢复备份的数据，点击恢复按钮，会在数据保存位置打开备份文件夹，您可以选择要恢复的备份文件进行恢复。
               </p>
               <div class="backup-restore-buttons" style="margin-top: 20px">
@@ -154,7 +179,7 @@ ipcRenderer.on("operation-error", (event, error) => {
   gap: 5px;
 }
 .about-container {
-  padding: 20px;
+  padding: 10px;
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);

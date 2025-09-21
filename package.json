@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.4",
   "main": "src/main/main.js",
-  "discription": "Easy convert some files to epub",
+  "description": "Easy convert some files to epub",
   "author": {
     "name": "HXL",
     "email": "pjhxl@qq.com"

@@ -113,8 +113,6 @@ const formattedContent = computed(() => {
       return `<p>${line}</p>`;
     })
     .join("\n");
-  console.log("formattedContent", curStr);
-
   return curStr;
 });
 

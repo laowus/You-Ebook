@@ -12,6 +12,7 @@ const {
 const isDevEnv = process.env["NODE_ENV"] === "dev";
 const path = require("path");
 const fs = require("fs");
+const AdmZip = require("adm-zip");
 const archiver = require("archiver"); // 需要安装: npm install archiver
 const unzipper = require("unzipper"); // 需要安装: npm install unzipper
 const epubDir = path.join(app.getPath("userData"), "bookdata", "epub");
@@ -34,8 +35,8 @@ if (!isDevEnv) {
 let mainWin = null,
   tray = null;
 let options = {
-  width: 1050,
-  height: 660,
+  width: 1200,
+  height: 900,
   frame: false,
   webPreferences: {
     nodeIntegration: true,
@@ -66,8 +67,8 @@ const startup = () => {
 const createWindow = () => {
   if (!mainWin) {
     // 从 electron-store 中获取窗口大小和位置
-    const windowWidth = parseInt(store.get("mainWindowWidth") || 1050);
-    const windowHeight = parseInt(store.get("mainWindowHeight") || 660);
+    const windowWidth = parseInt(store.get("mainWindowWidth") || 1200);
+    const windowHeight = parseInt(store.get("mainWindowHeight") || 900);
     const windowX = parseInt(store.get("mainWindowX"));
     const windowY = parseInt(store.get("mainWindowY"));
     const mainWindow = new BrowserWindow({
@@ -140,8 +141,8 @@ ipcMain.on("window-max", (event) => {
   const webContent = event.sender;
   const win = BrowserWindow.fromWebContents(webContent);
   if (win.isMaximized()) {
-    const width = store.get("mainWindowWidth") || 1050;
-    const height = store.get("mainWindowHeight") || 660;
+    const width = store.get("mainWindowWidth") || 1200;
+    const height = store.get("mainWindowHeight") || 900;
     const x = store.get("mainWindowX") || mainWin.getPosition()[0];
     const y = store.get("mainWindowY") || mainWin.getPosition()[1];
     if (width && height) {
@@ -471,38 +472,68 @@ function copyDirectorySync(srcDir, destDir) {
 // 备份数据
 ipcMain.on("backup-data", async (event, dataDir) => {
   try {
-    // 弹出目录选择对话框
-    const { canceled, filePaths } = await dialog.showOpenDialog({
-      title: "选择备份保存目录",
-      properties: ["openDirectory"],
-      buttonLabel: "选择目录",
+    // 获取当前日期时间，用于生成备份文件名
+    const timestamp = new Date().getTime();
+    const defaultBackupPath = path.join(
+      app.getPath("documents"),
+      `you-ebook-backup-${timestamp}.zip`
+    );
+
+    // 弹出保存对话框，让用户选择备份位置
+    const { filePath } = await dialog.showSaveDialog({
+      title: "备份数据",
+      defaultPath: defaultBackupPath,
+      filters: [
+        { name: "数据文件", extensions: ["zip"] },
+        { name: "所有文件", extensions: ["*"] },
+      ],
+      parent: mainWin,
+      modal: true,
     });
 
-    if (canceled || filePaths.length === 0) {
-      event.sender.send("backup-data-reply", {
+    if (!filePath) {
+      event.sender.send("backup-database-reply", {
         success: false,
-        message: "用户取消选择目录",
+        message: "用户取消备份",
       });
       return;
     }
 
-    // 获取用户选择的目录
-    const backupDir = filePaths[0];
+    const output = fs.createWriteStream(filePath);
 
-    // 在这里添加原有的备份逻辑，但使用用户选择的目录
-    // 例如：创建带时间戳的备份文件名
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupFileName = `you-ebook-backup-${timestamp}.zip`;
-    const backupFilePath = path.join(backupDir, backupFileName);
+    // 创建archiver实例
+    const archive = archiver("zip", {
+      zlib: { level: 9 }, // 设置压缩级别
+    });
 
-    // 其余的备份逻辑保持不变，但使用backupFilePath作为保存路径
-    // ...
+    // 监听事件
+    output.on("close", () => {
+      console.log(`压缩完成，总大小: ${archive.pointer()} 字节`);
+      event.sender.send("backup-data-reply", {
+        success: true,
+        message: `备份成功！文件已保存至：${filePath}`,
+        backupFilePath: filePath,
+      });
+    });
+
+    archive.on("error", (err) => {
+      console.error("压缩过程中出错:", err);
+      event.sender.send("backup-data-reply", {
+        success: false,
+        message: `备份失败：${err.message}`,
+      });
+    });
+
+    // 管道连接
+    archive.pipe(output);
+    archive.directory(dataDir, "");
+    archive.finalize();
 
     // 备份完成后发送成功消息
     event.sender.send("backup-data-reply", {
       success: true,
-      message: `数据备份成功，保存至：${backupFilePath}`,
-      backupPath: backupFilePath,
+      message: `数据备份成功，保存至：${filePath}`,
+      backupPath: filePath,
     });
   } catch (error) {
     console.error("备份数据时出错：", error);
@@ -514,49 +545,97 @@ ipcMain.on("backup-data", async (event, dataDir) => {
 });
 
 // 恢复数据
-ipcMain.on("restore-data", (event, dataDir) => {
-  // 打开文件对话框选择备份文件
-  dialog
-    .showOpenDialog({
-      title: "选择备份文件",
-      filters: [
-        {
-          name: "ZIP文件",
-          extensions: ["zip"],
-        },
-      ],
-      properties: ["openFile"],
-    })
-    .then((result) => {
-      if (!result.canceled && result.filePaths.length > 0) {
-        const backupFilePath = result.filePaths[0];
-
-        try {
-          // 清空现有数据目录（除了备份文件）
-          const files = fs.readdirSync(dataDir);
-          files.forEach((file) => {
-            const filePath = path.join(dataDir, file);
-            if (fs.lstatSync(filePath).isDirectory()) {
-              fs.rmSync(filePath, { recursive: true, force: true });
-            } else if (!file.endsWith(".zip")) {
-              fs.unlinkSync(filePath);
-            }
-          });
-
-          // 解压备份文件到数据目录
-          fs.createReadStream(backupFilePath)
-            .pipe(unzipper.Extract({ path: dataDir }))
-            .on("close", () => {
-              event.reply("restore-complete", "恢复完成！");
-            })
-            .on("error", (err) => {
-              event.reply("operation-error", err.message);
-            });
-        } catch (error) {
-          event.reply("operation-error", error.message);
-        }
-      }
+// 在恢复数据功能中添加重试机制和错误处理
+ipcMain.on("restore-data", async (event, dataDir) => {
+  try {
+    // 打开文件对话框选择备份文件
+    const { filePaths } = await dialog.showOpenDialog({
+      filters: [{ name: "备份文件", extensions: ["zip"] }],
     });
+
+    if (!filePaths || filePaths.length === 0) {
+      event.sender.send("restore-data-reply", {
+        success: false,
+        message: "未选择备份文件",
+      });
+      return;
+    }
+
+    const backupFilePath = filePaths[0];
+
+    // 尝试多次解锁和删除操作
+    let maxRetries = 3;
+    let retryCount = 0;
+    let isSuccessful = false;
+
+    while (retryCount < maxRetries && !isSuccessful) {
+      try {
+        // 检查目标目录是否存在，不存在则创建
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+
+        // 先删除目标目录下的所有文件（添加重试逻辑）
+        const deleteWithRetry = (path) => {
+          return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            const tryDelete = () => {
+              attempts++;
+              try {
+                if (fs.existsSync(path)) {
+                  fs.unlinkSync(path);
+                  resolve();
+                } else {
+                  resolve();
+                }
+              } catch (err) {
+                if (
+                  attempts < maxAttempts &&
+                  (err.code === "EBUSY" || err.code === "EPERM")
+                ) {
+                  // 短暂延迟后重试
+                  setTimeout(tryDelete, 500);
+                } else {
+                  reject(err);
+                }
+              }
+            };
+
+            tryDelete();
+          });
+        };
+
+        // 解压备份文件到目标目录
+        const zip = new AdmZip(backupFilePath);
+        zip.extractAllTo(dataDir, true); // true 表示覆盖现有文件
+
+        isSuccessful = true;
+      } catch (err) {
+        retryCount++;
+        console.error(`恢复数据时出错（第${retryCount}次尝试）：`, err);
+
+        if (retryCount >= maxRetries) {
+          throw err; // 达到最大重试次数后抛出错误
+        }
+
+        // 等待一段时间后重试
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+
+    event.sender.send("restore-data-reply", {
+      success: true,
+      message: "数据恢复成功！",
+    });
+  } catch (err) {
+    console.error("恢复数据时出错：", err);
+    event.sender.send("restore-data-reply", {
+      success: false,
+      message: `数据恢复失败：${err.message}`,
+    });
+  }
 });
 
 const init = () => {
