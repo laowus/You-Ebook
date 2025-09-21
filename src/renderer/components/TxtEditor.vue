@@ -3,7 +3,7 @@ import { ref, inject, watch, onMounted, toRaw, computed } from "vue";
 const { ipcRenderer } = window.require("electron");
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore";
-const { curChapter, metaData, toc } = storeToRefs(useBookStore());
+const { curChapter, selectColor } = storeToRefs(useBookStore());
 
 const barValue = ref("1");
 const suffix = ref("\n");
@@ -179,6 +179,39 @@ const addImage = () => {
       ElMessage.error("图片选择失败");
     });
 };
+
+const insertStyle = (styleStr) => {
+  if (!editArea.value) return;
+
+  // 获取textarea和选中信息
+  const textarea = editArea.value;
+  const { selectionStart, selectionEnd, value } = textarea;
+  const selectedText = value.substring(selectionStart, selectionEnd);
+
+  if (!selectedText) return; // 如果没有选中文字，直接返回
+
+  // 按换行符分割选中的文字
+  const lines = selectedText.split("\n");
+
+  // 给每段添加span标签
+  const formattedLines = lines.map((line) => {
+    if (styleStr.ty === "color")
+      return `<span style="color: ${styleStr.val}">${line}</span>`;
+    else if (styleStr.ty === "align")
+      return `<p style="text-align: ${styleStr.val};">${line}</p>`;
+  });
+
+  // 用<br>连接处理后的段落，保持原来的换行效果
+  const formattedText = formattedLines.join("\n");
+
+  // 更新内容
+  const newContent =
+    value.substring(0, selectionStart) +
+    formattedText +
+    value.substring(selectionEnd);
+
+  curChapter.value.content = newContent;
+};
 </script>
 
 <template>
@@ -191,19 +224,60 @@ const addImage = () => {
         预览
       </button>
     </div>
-    <div class="edit-bar" v-if="curTabIndex === 0">
-      <button class="btn-icon-small" title="添加图片" @click="addImage">
+    <div class="edit-bar" v-if="curTabIndex === 0 && curChapter.content !== ''">
+      <button class="btn-icon-normal" title="添加图片" @click="addImage">
         <span class="iconfont icon-tianjiatupian"></span>
       </button>
-      <button class="btn-icon-small" title="斜体" @click="formatTag('i')">
+      <button class="btn-icon-normal" title="斜体" @click="formatTag('i')">
         <span class="iconfont icon-zitixieti"></span>
       </button>
-      <button class="btn-icon-small" title="下划线" @click="formatTag('u')">
+      <button class="btn-icon-normal" title="下划线" @click="formatTag('u')">
         <span class="iconfont icon-zitixiahuaxian"></span>
       </button>
-      <button class="btn-icon-small" title="加粗" @click="formatTag('b')">
+      <button class="btn-icon-normal" title="加粗" @click="formatTag('b')">
         <span class="iconfont icon-zitijiacu"></span>
       </button>
+      <div class="color-select-wrapper">
+        <button
+          class="btn-icon-small"
+          title="颜色"
+          @click="insertStyle({ ty: 'color', val: selectColor })"
+        >
+          <span
+            class="iconfont icon-yanseban"
+            :style="{ color: selectColor }"
+          ></span>
+        </button>
+        <input
+          class="select-panel"
+          type="color"
+          v-model="selectColor"
+          title="选择颜色"
+        />
+      </div>
+      <div class="color-select-wrapper">
+        <button
+          class="btn-icon-small"
+          title="居左"
+          @click="insertStyle({ ty: 'align', val: 'left' })"
+        >
+          <span class="iconfont icon-juzuo"></span>
+        </button>
+        <button
+          class="btn-icon-small"
+          title="居中"
+          @click="insertStyle({ ty: 'align', val: 'center' })"
+        >
+          <span class="iconfont icon-juzhongduiqi"></span>
+        </button>
+        <button
+          class="btn-icon-small"
+          title="居右"
+          @click="insertStyle({ ty: 'align', val: 'right' })"
+        >
+          <span class="iconfont icon-juyou"></span>
+        </button>
+      </div>
     </div>
     <div class="line-edit-wrapper" v-if="curTabIndex === 0">
       <div class="left-bar-wrapper">
@@ -247,6 +321,23 @@ const addImage = () => {
   gap: 20px;
 }
 
+.select-panel {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  border-color: transparent;
+}
+.color-select-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #ccc;
+  padding: 2px 5px;
+  border-radius: 5px;
+}
 .out-editor {
   width: 100%;
   height: 100%;
@@ -280,7 +371,7 @@ const addImage = () => {
   font-size: 14px;
 }
 
-.btn-icon-small {
+.btn-icon-normal {
   height: 1.5rem;
   width: 1.5rem;
   cursor: pointer;
@@ -295,6 +386,36 @@ const addImage = () => {
   /* 过渡动画使效果更平滑 */
   transition: all 0.2s ease;
 }
+
+.btn-icon-normal:hover {
+  background-color: #ffffcc;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  /* 优化边框样式 */
+  border: 1px solid #eee;
+}
+
+.btn-icon-normal .iconfont {
+  font-size: 1.2rem;
+  color: green;
+}
+
+.btn-icon-small {
+  height: 1.2rem;
+  width: 1.2rem;
+  cursor: pointer;
+  /* 添加flex布局确保图标居中 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 添加透明边框避免hover时布局跳动 */
+  border: 1px solid #ccc;
+  /* 圆角美化 */
+  border-radius: 4px;
+  /* 过渡动画使效果更平滑 */
+  transition: all 0.2s ease;
+}
+
 .btn-icon-small:hover {
   background-color: #ffffcc;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
@@ -304,7 +425,7 @@ const addImage = () => {
 }
 
 .btn-icon-small .iconfont {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: green;
 }
 
@@ -381,7 +502,6 @@ const addImage = () => {
   box-sizing: border-box;
   padding-left: 5px;
   background-image: linear-gradient(to bottom, #ccc 1px, transparent 1px);
-
   background-size: 100% 30px;
   background-attachment: local;
 }

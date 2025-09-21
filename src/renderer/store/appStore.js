@@ -82,14 +82,5 @@ export const useAppStore = defineStore("appStore", {
       this.tipShow = false;
       this.tipText = null;
     },
-  },
-  // persist: {
-  //   enabled: true,
-  //   strategies: [
-  //     {
-  //       storage: localStorage,
-  //       paths: ["currentHref"],
-  //     },
-  //   ],
-  // },
+  }
 });

@@ -34,7 +34,7 @@ QQ:37156760 (备注：You Ebook)
 - [x] 2、 优化正则分割章节
       ![Github snap 7](https://github.com/laowus/You-Ebook/blob/main/snapshot/07.jpg)
 
-- [x] 3、 支持 html( 加粗, 斜体, 下划线, 代码, 添加图片 )
+- [x] 3、 支持 html 文字( 加粗, 斜体, 下划线, 颜色, 方向 添加图片 )
       解压 epub 文件的图片放到 images 文件夹下面, 文件名使用自定义的短 id（避免重复）
       同步解析 html 标签，转换为对应的格式。图片存放形式：images/短 id.图片格式
       写入数据库中。
