@@ -1,10 +1,12 @@
 <script setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useAppStore } from "../store/appStore";
+const { ipcRenderer } = window.require("electron");
 const { aboutShow } = storeToRefs(useAppStore());
 const tindex = ref(0);
-const tabs = ref(["软件介绍", "捐赠支持"]);
+const dataDir = ref("");
+const tabs = ref(["软件介绍", "捐赠支持", "备份/恢复"]);
 const tabContents = ref([
   `
   YouEbook（捡书） 是一个基于 Vue3 + Electron 开发的跨平台电子书编辑器，支持 macOS、Windows、Linux 等操作系统。(本人只有Windows系统电脑, 其他没有平台测试。)
@@ -29,6 +31,46 @@ const tabContents = ref([
 const changeTab = (index) => {
   tindex.value = index;
 };
+
+onMounted(() => {
+  loadDataDir();
+});
+
+const loadDataDir = () => {
+  dataDir.value = ipcRenderer.sendSync("get-data-dir");
+};
+
+const openDataDir = () => {
+  ipcRenderer.send("open-data-dir", dataDir.value);
+};
+
+// 在script部分末尾添加以下方法
+const backupData = () => {
+  ipcRenderer.send("backup-data", dataDir.value);
+  // 可以添加提示信息
+  alert("备份操作已开始，请等待完成提示！");
+};
+
+const restoreData = () => {
+  // 先确认是否覆盖现有数据
+  if (confirm("恢复数据将覆盖现有数据，确定要继续吗？")) {
+    ipcRenderer.send("restore-data", dataDir.value);
+    alert("恢复操作已开始，请等待完成提示！");
+  }
+};
+
+// 监听备份和恢复完成的消息
+ipcRenderer.on("backup-complete", (event, message) => {
+  alert(message || "备份完成！");
+});
+
+ipcRenderer.on("restore-complete", (event, message) => {
+  alert(message || "恢复完成！");
+});
+
+ipcRenderer.on("operation-error", (event, error) => {
+  alert("操作失败：" + error);
+});
 </script>
 <template>
   <el-dialog v-model="aboutShow" title="关于" width="70%">
@@ -51,7 +93,7 @@ const changeTab = (index) => {
           <!-- 使用 v-html 渲染替换后的内容 -->
           <div v-html="tabContents[0].replace(/\n/g, '<br>')"></div>
         </div>
-        <div v-else class="content-item">
+        <div v-else-if="tindex === 1" class="content-item">
           {{ tabContents[1] }}
           <div class="payment-methods">
             <div class="payment-item">
@@ -64,12 +106,53 @@ const changeTab = (index) => {
             </div>
           </div>
         </div>
+        <div v-else-if="tindex === 2" class="content-item">
+          <div class="backup-restore">
+            <div class="data-top">
+              <h2>备份/恢复功能：</h2>
+              <p>
+                您可以使用备份/恢复功能来备份您的书籍数据，以及在需要时恢复备份。这对于保护您的书籍数据免受意外删除或损坏非常重要。
+              </p>
+            </div>
+            <div class="data-content">
+              <h2>数据保存位置：</h2>
+              <p>
+                {{ dataDir }}
+                <el-button type="primary" @click="openDataDir">
+                  打开
+                </el-button>
+              </p>
+              <h2>备份/恢复操作：</h2>
+              <p>
+                1、备份：点击备份按钮，会在数据保存位置创建一个备份文件夹，备份文件夹中包含了所有的书籍数据。
+                2、恢复：如果您需要恢复备份的数据，点击恢复按钮，会在数据保存位置打开备份文件夹，您可以选择要恢复的备份文件进行恢复。
+              </p>
+              <div class="backup-restore-buttons" style="margin-top: 20px">
+                <el-button
+                  type="primary"
+                  @click="backupData"
+                  style="margin-right: 10px"
+                >
+                  备份数据
+                </el-button>
+                <el-button type="primary" @click="restoreData">
+                  恢复数据
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </el-dialog>
 </template>
 
 <style scoped>
+.backup-restore {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 .about-container {
   padding: 20px;
   background-color: #ffffff;

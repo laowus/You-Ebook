@@ -13,6 +13,11 @@ const fileHandle = () => {
     ensureDirectoryExists(bookDir);
     event.returnValue = bookDir;
   });
+
+  ipcMain.on("get-data-dir", (event, arg) => {
+    ensureDirectoryExists(dataPath);
+    event.returnValue = dataPath;
+  });
   // 获取封面保存路径
   ipcMain.on("get-cover-dir", (event, arg) => {
     ensureDirectoryExists(coverDir);

@@ -10,6 +10,7 @@ import HistoryView from "./HistoryView.vue";
 import NewBook from "./NewBook.vue";
 import EditBook from "./EditBook.vue";
 import About from "./About.vue";
+
 const { ipcRenderer } = window.require("electron");
 
 const { ctxMenuShow, ctxMenuData, ctxMenuSeparatorNums, tipShow, tipText } =

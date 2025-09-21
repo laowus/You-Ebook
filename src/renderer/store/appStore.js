@@ -82,5 +82,5 @@ export const useAppStore = defineStore("appStore", {
       this.tipShow = false;
       this.tipText = null;
     },
-  }
+  },
 });

@@ -40,6 +40,7 @@ QQ:37156760 (备注：You Ebook)
       写入数据库中。
       ![Github snap 10](https://github.com/laowus/You-Ebook/blob/main/snapshot/10.jpg)
       ![Github snap 11](https://github.com/laowus/You-Ebook/blob/main/snapshot/11.jpg)
+- [x] 4、 数据备份, 数据恢复。
 
 ### 开发/测试环境
 

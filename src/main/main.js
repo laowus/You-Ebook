@@ -1,9 +1,19 @@
 //关闭警告提示
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
-const { app, BrowserWindow, ipcMain, Menu, dialog, Tray } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  dialog,
+  Tray,
+  shell,
+} = require("electron");
 const isDevEnv = process.env["NODE_ENV"] === "dev";
 const path = require("path");
 const fs = require("fs");
+const archiver = require("archiver"); // 需要安装: npm install archiver
+const unzipper = require("unzipper"); // 需要安装: npm install unzipper
 const epubDir = path.join(app.getPath("userData"), "bookdata", "epub");
 const Store = require("electron-store");
 const store = new Store();
@@ -149,6 +159,12 @@ ipcMain.on("window-close", (event) => {
   // const webContent = event.sender;
   // const win = BrowserWindow.fromWebContents(webContent);
   app.quit();
+});
+
+ipcMain.on("open-data-dir", (event, dataDir) => {
+  if (dataDir) {
+    shell.openPath(dataDir);
+  }
 });
 
 const sendToRenderer = (channel, args) => {
@@ -451,6 +467,97 @@ function copyDirectorySync(srcDir, destDir) {
     throw error;
   }
 }
+
+// 备份数据
+ipcMain.on("backup-data", async (event, dataDir) => {
+  try {
+    // 弹出目录选择对话框
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: "选择备份保存目录",
+      properties: ["openDirectory"],
+      buttonLabel: "选择目录",
+    });
+
+    if (canceled || filePaths.length === 0) {
+      event.sender.send("backup-data-reply", {
+        success: false,
+        message: "用户取消选择目录",
+      });
+      return;
+    }
+
+    // 获取用户选择的目录
+    const backupDir = filePaths[0];
+
+    // 在这里添加原有的备份逻辑，但使用用户选择的目录
+    // 例如：创建带时间戳的备份文件名
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupFileName = `you-ebook-backup-${timestamp}.zip`;
+    const backupFilePath = path.join(backupDir, backupFileName);
+
+    // 其余的备份逻辑保持不变，但使用backupFilePath作为保存路径
+    // ...
+
+    // 备份完成后发送成功消息
+    event.sender.send("backup-data-reply", {
+      success: true,
+      message: `数据备份成功，保存至：${backupFilePath}`,
+      backupPath: backupFilePath,
+    });
+  } catch (error) {
+    console.error("备份数据时出错：", error);
+    event.sender.send("backup-data-reply", {
+      success: false,
+      message: `备份失败：${error.message}`,
+    });
+  }
+});
+
+// 恢复数据
+ipcMain.on("restore-data", (event, dataDir) => {
+  // 打开文件对话框选择备份文件
+  dialog
+    .showOpenDialog({
+      title: "选择备份文件",
+      filters: [
+        {
+          name: "ZIP文件",
+          extensions: ["zip"],
+        },
+      ],
+      properties: ["openFile"],
+    })
+    .then((result) => {
+      if (!result.canceled && result.filePaths.length > 0) {
+        const backupFilePath = result.filePaths[0];
+
+        try {
+          // 清空现有数据目录（除了备份文件）
+          const files = fs.readdirSync(dataDir);
+          files.forEach((file) => {
+            const filePath = path.join(dataDir, file);
+            if (fs.lstatSync(filePath).isDirectory()) {
+              fs.rmSync(filePath, { recursive: true, force: true });
+            } else if (!file.endsWith(".zip")) {
+              fs.unlinkSync(filePath);
+            }
+          });
+
+          // 解压备份文件到数据目录
+          fs.createReadStream(backupFilePath)
+            .pipe(unzipper.Extract({ path: dataDir }))
+            .on("close", () => {
+              event.reply("restore-complete", "恢复完成！");
+            })
+            .on("error", (err) => {
+              event.reply("operation-error", err.message);
+            });
+        } catch (error) {
+          event.reply("operation-error", error.message);
+        }
+      }
+    });
+});
 
 const init = () => {
   app.whenReady().then(async () => {

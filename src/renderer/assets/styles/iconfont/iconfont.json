@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "2781697",
+      "name": "数据备份恢复",
+      "font_class": "shujubeifenhuifu",
+      "unicode": "e6a5",
+      "unicode_decimal": 59045
+    },
+    {
       "icon_id": "6337460",
       "name": "居中对齐",
       "font_class": "juzhongduiqi",
