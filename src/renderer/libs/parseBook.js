@@ -267,6 +267,8 @@ const getTextFromHTML = (htmlString, imageMap = null) => {
         }
       }
       return node.outerHTML;
+    } else if (node.nodeName === "BR") {
+      return "\n";
     } else if (node.nodeName === "P") {
       // 处理p标签：替换为换行符
       let result = "\n";

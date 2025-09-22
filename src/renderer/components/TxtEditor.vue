@@ -3,6 +3,7 @@ import { ref, inject, watch, onMounted, toRaw, computed } from "vue";
 const { ipcRenderer } = window.require("electron");
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore";
+import EventBus from "../common/EventBus";
 const { curChapter, selectColor } = storeToRefs(useBookStore());
 
 const barValue = ref("1");
@@ -35,6 +36,8 @@ const scrollRightWrapperToTop = () => {
   }
 };
 
+EventBus.on("scrollToTop", scrollRightWrapperToTop);
+
 watch(
   curChapter,
   (val) => {
@@ -58,14 +61,6 @@ watch(
     });
   },
   { immediate: true, deep: true }
-);
-
-watch(
-  () => curChapter.value?.title,
-  (newTitle, oldTitle) => {
-    scrollRightWrapperToTop();
-  },
-  { immediate: true, deep: true } // 设置 immediate: true 会在组件初始化时立即执行一次
 );
 
 onMounted(() => {
@@ -112,7 +107,7 @@ const formattedContent = computed(() => {
       }
       return `<p>${line}</p>`;
     })
-    .join("\n");
+    .join("");
   return curStr;
 });
 
@@ -450,6 +445,7 @@ const insertStyle = (styleStr) => {
   overflow-y: auto; /* 内容超出时显示垂直滚动条 */
   overflow-x: hidden; /* 禁止水平滚动 */
   margin-bottom: 10px;
+  white-space: pre-wrap;
 }
 .preview-content p {
   margin-bottom: 16px; /* 设置段落间距 */

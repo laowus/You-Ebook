@@ -1,3 +1,5 @@
+import EventBus from "../../common/EventBus.js";
+
 const createSVGElement = (tag) =>
   document.createElementNS("http://www.w3.org/2000/svg", tag);
 
@@ -146,6 +148,7 @@ export const createTOCView = (toc, onclick, oncontextmenu, onDrop) => {
     if (currentItem) {
       currentItem.removeAttribute("aria-current");
       currentItem.tabIndex = -1;
+      EventBus.emit("scrollToTop");
     }
     const el = map.get(href);
     if (!el) {
