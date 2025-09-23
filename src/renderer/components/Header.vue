@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, inject, toRaw } from "vue";
 import { storeToRefs } from "pinia";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import EventBus from "../common/EventBus";
 import WindowCtr from "./WindowCtr.vue";
 import { getChapters } from "../utils/funs.js";
@@ -283,9 +283,20 @@ const exportHtml = async () => {
 
 // 定义重启程序的函数
 const restartApp = () => {
-  if (confirm("确定要重启程序吗？")) {
-    ipcRenderer.send("restart-app");
-  }
+  ElMessageBox.confirm("确定要重启程序吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(() => {
+      ipcRenderer.send("restart-app");
+    })
+    .catch(() => {
+      ElMessage({
+        type: "info",
+        message: "已取消重启",
+      });
+    });
 };
 </script>
 <template>

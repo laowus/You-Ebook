@@ -13,6 +13,105 @@ const barArea = ref(null);
 
 const curTabIndex = ref(0);
 
+// 添加查找替换相关状态
+const searchVisible = ref(false);
+const searchText = ref("");
+const matchCount = ref(0);
+const currentMatchIndex = ref(0);
+const matches = ref([]); // 存储所有匹配位置信息
+
+// 添加查找替换相关方法
+const toggleSearchPanel = () => {
+  searchVisible.value = !searchVisible.value;
+  if (searchVisible.value && editArea.value) {
+    // 聚焦到输入框
+    setTimeout(() => {
+      const searchInput = document.querySelector(".search-input");
+      if (searchInput) searchInput.focus();
+    }, 100);
+  }
+};
+
+const searchTextHandler = () => {
+  if (!searchText.value || !editArea.value) {
+    matchCount.value = 0;
+    currentMatchIndex.value = 0;
+    matches.value = []; // 清空匹配位置信息
+    return;
+  }
+
+  const content = editArea.value.value;
+  const regex = new RegExp(searchText.value, "g");
+  const matchResults = [];
+  let match;
+
+  // 查找所有匹配位置
+  while ((match = regex.exec(content)) !== null) {
+    matchResults.push({
+      start: match.index,
+      end: match.index + match[0].length,
+    });
+    // 防止零宽度匹配导致的无限循环
+    if (match[0].length === 0) {
+      regex.lastIndex++;
+    }
+  }
+
+  matches.value = matchResults;
+  matchCount.value = matchResults.length;
+  currentMatchIndex.value = 0;
+
+  // 如果有匹配项，选中第一个
+  if (matchResults.length > 0) {
+    console.log("matchResults", matchResults);
+    selectMatch(0);
+  }
+};
+
+// 选中指定索引的匹配项
+const selectMatch = (index) => {
+  if (!editArea.value || index < 0 || index >= matches.value.length) {
+    return;
+  }
+
+  const textarea = editArea.value;
+  const match = matches.value[index];
+
+  // 设置选中范围
+  textarea.selectionStart = match.start;
+  textarea.selectionEnd = match.end;
+
+  // 滚动到选中位置
+  textarea.focus();
+
+  // 更新当前匹配索引
+  currentMatchIndex.value = index + 1; // 显示为从1开始的索引
+};
+
+// 查找下一个匹配项
+const searchNext = () => {
+  if (matchCount.value === 0) return;
+
+  let nextIndex = currentMatchIndex.value; // 因为currentMatchIndex是从1开始的
+  if (nextIndex >= matchCount.value) {
+    nextIndex = 0; // 循环到第一个
+  }
+
+  selectMatch(nextIndex);
+};
+
+// 查找上一个匹配项
+const searchPrev = () => {
+  if (matchCount.value === 0) return;
+
+  let prevIndex = currentMatchIndex.value - 2; // 因为currentMatchIndex是从1开始的
+  if (prevIndex < 0) {
+    prevIndex = matchCount.value - 1; // 循环到最后一个
+  }
+
+  selectMatch(prevIndex);
+};
+
 // 设置行号方法
 const line = (n) => {
   let num = "";
@@ -271,6 +370,13 @@ const insertStyle = (styleStr) => {
           <span class="iconfont icon-juyou"></span>
         </button>
       </div>
+      <button
+        class="btn-icon-normal"
+        title="查找替换"
+        @click="toggleSearchPanel"
+      >
+        <span class="iconfont icon-chazhaotihuan"></span>
+      </button>
     </div>
     <div class="line-edit-wrapper" v-if="curTabIndex === 0">
       <div class="left-bar-wrapper">
@@ -296,6 +402,40 @@ const insertStyle = (styleStr) => {
     <div class="preview-wrapper" v-if="curTabIndex === 1">
       <div class="preview-content">
         <div v-html="formattedContent"></div>
+      </div>
+    </div>
+    <!-- 添加查找替换浮动块 -->
+    <!-- 修改查找替换浮动块为更紧凑的单行样式 -->
+    <div v-if="searchVisible" class="search-float-panel">
+      <div class="search-content">
+        <span class="search-title">
+          <i class="iconfont icon-xiangyou"></i>
+        </span>
+        <input
+          v-model="searchText"
+          class="search-input"
+          placeholder="输入查找内容"
+          @input="searchTextHandler"
+          @keyup.enter="searchNext"
+          @keyup.arrowdown="searchNext"
+          @keyup.arrowup="searchPrev"
+        />
+        <div class="search-controls">
+          <button class="search-btn" @click="searchPrev" title="上一个（↑）">
+            ↑
+          </button>
+          <button class="search-btn" @click="searchNext" title="下一个（↓）">
+            ↓
+          </button>
+        </div>
+        <div class="search-info">
+          <span v-if="matchCount > 0" class="match-count"
+            >{{ currentMatchIndex }}/{{ matchCount }}</span
+          >
+        </div>
+        <button class="search-close" @click="toggleSearchPanel" title="关闭">
+          ×
+        </button>
       </div>
     </div>
   </div>
@@ -487,16 +627,16 @@ const insertStyle = (styleStr) => {
   width: 100%;
   height: 100%;
   resize: none;
-  line-height: 30px;
-  font-size: 16px;
+  line-height: 28px;
+  font-size: 14px;
   float: left;
   padding: 0;
   color: black;
   font-family: inherit;
   box-sizing: border-box;
   padding-left: 5px;
-  background-image: linear-gradient(to bottom, #ccc 1px, transparent 1px);
-  background-size: 100% 30px;
+  background-image: repeating-linear-gradient(#eee 0 1px, transparent 1px 28px);
+  background-size: 100% 28px;
   background-attachment: local;
 }
 
@@ -525,5 +665,117 @@ const insertStyle = (styleStr) => {
   text-align: right;
   font-weight: bold;
   box-sizing: border-box;
+}
+
+/* 优化查找替换浮动块样式 - 单行紧凑版 */
+.search-float-panel {
+  position: fixed;
+  top: 10%;
+  right: 20px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.search-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.search-input {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+  width: 100px;
+  height: 26px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+}
+
+.search-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+}
+
+.search-btn {
+  padding: 2px 6px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-btn:hover {
+  background-color: #e6f7ff;
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.search-info {
+  display: flex;
+  align-items: center;
+}
+
+.match-count {
+  font-size: 12px;
+  color: #666;
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-family: monospace;
+}
+
+.search-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.search-close:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* 移除原有的search-header和search-body样式 */
+.search-header,
+.search-body {
+  display: none;
 }
 </style>

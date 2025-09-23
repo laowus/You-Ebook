@@ -6,6 +6,27 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "577399",
+      "name": "向下2",
+      "font_class": "xiangxia2",
+      "unicode": "e772",
+      "unicode_decimal": 59250
+    },
+    {
+      "icon_id": "18863197",
+      "name": "向右",
+      "font_class": "xiangyou",
+      "unicode": "e64a",
+      "unicode_decimal": 58954
+    },
+    {
+      "icon_id": "1615636",
+      "name": "查找替换",
+      "font_class": "chazhaotihuan",
+      "unicode": "e615",
+      "unicode_decimal": 58901
+    },
+    {
       "icon_id": "2781697",
       "name": "数据备份恢复",
       "font_class": "shujubeifenhuifu",

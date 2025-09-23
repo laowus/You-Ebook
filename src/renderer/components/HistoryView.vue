@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, reactive, onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { ElMessage, ElMessageBox } from "element-plus";
 import EventBus from "../common/EventBus";
 import { useAppStore } from "../store/appStore";
 import { useBookStore } from "../store/bookStore";
@@ -61,19 +62,6 @@ const delBook = (row) => {
   ipcRenderer.send("db-del-book", row.id);
 };
 
-// 新增清空所有数据的函数
-const clearAllBooks = () => {
-  if (confirm("确定要清空所有历史记录吗？")) {
-    // 监听清空数据响应
-    ipcRenderer.once("db-clear-books-response", (event, response) => {
-      if (response.success) {
-        fetchBooks(); // 刷新数据
-      }
-    });
-    ipcRenderer.send("db-clear-books"); // 发送清空数据请求
-  }
-};
-
 const editBook = (row) => {
   setEditBookData(row); // 设置要编辑的书籍数据
   hideHistoryView();
@@ -81,21 +69,36 @@ const editBook = (row) => {
 };
 
 const resetData = () => {
-  if (confirm("确定要清空所有历史记吗？会直接删除，无法回复！")) {
-    // 监听重置表响应
-    ipcRenderer.once("db-reset-tables-response", (event, response) => {
-      if (response.success) {
-        console.log("Tables reset successfully");
-        // 发送重启程序请求
-        hideHistoryView();
-        ipcRenderer.send("restart-app");
-      } else {
-        console.error("Error resetting tables:", response.error);
-      }
+  ElMessageBox.confirm(
+    "确定要清空所有历史记录吗？会直接删除，无法恢复！",
+    "提示",
+    {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+    }
+  )
+    .then(() => {
+      // 监听重置表响应
+      ipcRenderer.once("db-reset-tables-response", (event, response) => {
+        if (response.success) {
+          console.log("Tables reset successfully");
+          // 发送重启程序请求
+          hideHistoryView();
+          ipcRenderer.send("restart-app");
+        } else {
+          console.error("Error resetting tables:", response.error);
+        }
+      });
+      // 发送重置表请求
+      ipcRenderer.send("db-reset-tables");
+    })
+    .catch(() => {
+      ElMessage({
+        type: "info",
+        message: "已取消重置",
+      });
     });
-    // 发送重置表请求
-    ipcRenderer.send("db-reset-tables");
-  }
 };
 </script>
 <template>
