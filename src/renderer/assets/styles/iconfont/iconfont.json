@@ -6,6 +6,20 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "31190540",
+      "name": "全部替换",
+      "font_class": "quanbutihuan",
+      "unicode": "e632",
+      "unicode_decimal": 58930
+    },
+    {
+      "icon_id": "42696595",
+      "name": "查找替换",
+      "font_class": "chazhaotihuan1",
+      "unicode": "e687",
+      "unicode_decimal": 59015
+    },
+    {
       "icon_id": "577399",
       "name": "向下2",
       "font_class": "xiangxia2",

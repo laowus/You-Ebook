@@ -12,6 +12,7 @@ const editArea = ref(null);
 const barArea = ref(null);
 
 const curTabIndex = ref(0);
+const showReplace = ref(false);
 
 // 添加查找替换相关状态
 const searchVisible = ref(false);
@@ -19,6 +20,8 @@ const searchText = ref("");
 const matchCount = ref(0);
 const currentMatchIndex = ref(0);
 const matches = ref([]); // 存储所有匹配位置信息
+
+const replaceText = ref("");
 
 // 添加查找替换相关方法
 const toggleSearchPanel = () => {
@@ -84,6 +87,92 @@ const selectMatch = (index) => {
   // 滚动到选中位置
   textarea.focus();
 
+  // 考虑视觉换行的精确滚动实现
+  const scrollToVisualLine = () => {
+    const textareaEl = textarea;
+
+    // 创建用于测量的临时元素
+    const createMeasurementElement = () => {
+      const measurementDiv = document.createElement("div");
+
+      // 复制文本框的关键样式，确保测量准确
+      const textareaStyle = window.getComputedStyle(textareaEl);
+      measurementDiv.style.visibility = "hidden";
+      measurementDiv.style.position = "absolute";
+      measurementDiv.style.top = "-9999px";
+      measurementDiv.style.left = "-9999px";
+      measurementDiv.style.width = textareaStyle.width;
+      measurementDiv.style.font = textareaStyle.font;
+      measurementDiv.style.fontSize = textareaStyle.fontSize;
+      measurementDiv.style.fontFamily = textareaStyle.fontFamily;
+      measurementDiv.style.lineHeight = textareaStyle.lineHeight;
+      measurementDiv.style.padding = textareaStyle.padding;
+      measurementDiv.style.border = textareaStyle.border;
+      measurementDiv.style.boxSizing = textareaStyle.boxSizing;
+      measurementDiv.style.whiteSpace = "pre-wrap"; // 关键：处理空白和换行
+      measurementDiv.style.wordWrap = "break-word"; // 关键：允许单词内换行
+      measurementDiv.style.overflowWrap = "break-word";
+
+      document.body.appendChild(measurementDiv);
+      return measurementDiv;
+    };
+
+    // 计算文本到指定位置的实际显示行数
+    const calculateVisualLines = (text, pos) => {
+      const measurementDiv = createMeasurementElement();
+
+      // 计算行高
+      measurementDiv.textContent = "X"; // 使用单个字符计算行高
+      const lineHeight = measurementDiv.offsetHeight;
+
+      // 设置文本到指定位置
+      measurementDiv.textContent = text.substring(0, pos);
+
+      // 计算实际显示的行数
+      const totalHeight = measurementDiv.offsetHeight;
+      const visualLines = Math.ceil(totalHeight / lineHeight);
+
+      // 清理临时元素
+      document.body.removeChild(measurementDiv);
+
+      return {
+        lines: visualLines,
+        lineHeight: lineHeight,
+      };
+    };
+
+    // 获取选择位置的视觉行数和行高
+    const result = calculateVisualLines(textareaEl.value, match.start);
+    const visualLines = result.lines;
+    const lineHeight = result.lineHeight;
+
+    // 计算目标滚动位置
+    const viewportHeight = textareaEl.clientHeight;
+    const visibleLines = Math.floor(viewportHeight / lineHeight);
+
+    // 计算滚动值，使选中行位于视图中央
+    const targetScrollTop = Math.max(
+      0,
+      (visualLines - Math.floor(visibleLines / 2)) * lineHeight
+    );
+
+    // 确保不超出最大滚动范围
+    const maxScrollTop = textareaEl.scrollHeight - viewportHeight;
+    const finalScrollTop = Math.min(targetScrollTop, maxScrollTop);
+
+    // 使用requestAnimationFrame确保精确滚动
+    requestAnimationFrame(() => {
+      textareaEl.scrollTop = finalScrollTop;
+
+      // 二次确认滚动位置
+      requestAnimationFrame(() => {
+        textareaEl.scrollTop = finalScrollTop;
+      });
+    });
+  };
+
+  // 延迟执行以确保DOM已更新
+  setTimeout(scrollToVisualLine, 10);
   // 更新当前匹配索引
   currentMatchIndex.value = index + 1; // 显示为从1开始的索引
 };
@@ -304,6 +393,60 @@ const insertStyle = (styleStr) => {
 
   curChapter.value.content = newContent;
 };
+
+// 替换当前选择的文本
+const replaceCurrent = () => {
+  const textareaEl = editArea.value;
+  if (!textareaEl || !searchText.value) return;
+
+  const start = textareaEl.selectionStart;
+  const end = textareaEl.selectionEnd;
+  const selectedText = textareaEl.value.substring(start, end);
+
+  // 检查选中的文本是否与要查找的文本匹配
+  if (selectedText === searchText.value) {
+    // 执行替换
+    const newValue =
+      textareaEl.value.substring(0, start) +
+      replaceText.value +
+      textareaEl.value.substring(end);
+
+    textareaEl.value = newValue;
+
+    // 设置光标位置到替换后的文本末尾
+    const newCursorPos = start + replaceText.value.length;
+    textareaEl.selectionStart = newCursorPos;
+    textareaEl.selectionEnd = newCursorPos;
+
+    // 重新聚焦textarea
+    textareaEl.focus();
+
+    // 触发input事件以更新v-model绑定
+    textareaEl.dispatchEvent(new Event("input"));
+  } else {
+    // 如果当前选中的文本不匹配，尝试查找下一个匹配项
+    searchNext();
+  }
+};
+
+// 替换所有匹配的文本
+const replaceAll = () => {
+  const textareaEl = editArea.value;
+  if (!textareaEl || !searchText.value) return;
+
+  // 创建正则表达式，g标志表示全局匹配
+  const regex = new RegExp(searchText.value, "g");
+  const originalValue = textareaEl.value;
+  const newValue = originalValue.replace(regex, replaceText.value);
+
+  textareaEl.value = newValue;
+
+  // 触发input事件以更新v-model绑定
+  textareaEl.dispatchEvent(new Event("input"));
+
+  // 重新聚焦textarea
+  textareaEl.focus();
+};
 </script>
 
 <template>
@@ -404,44 +547,76 @@ const insertStyle = (styleStr) => {
         <div v-html="formattedContent"></div>
       </div>
     </div>
-    <!-- 添加查找替换浮动块 -->
-    <!-- 修改查找替换浮动块为更紧凑的单行样式 -->
-    <div v-if="searchVisible" class="search-float-panel">
-      <div class="search-content">
-        <span class="search-title">
-          <i class="iconfont icon-xiangyou"></i>
-        </span>
-        <input
-          v-model="searchText"
-          class="search-input"
-          placeholder="输入查找内容"
-          @input="searchTextHandler"
-          @keyup.enter="searchNext"
-          @keyup.arrowdown="searchNext"
-          @keyup.arrowup="searchPrev"
-        />
-        <div class="search-controls">
-          <button class="search-btn" @click="searchPrev" title="上一个（↑）">
-            ↑
-          </button>
-          <button class="search-btn" @click="searchNext" title="下一个（↓）">
-            ↓
+
+    <div
+      v-if="searchVisible && curChapter.content !== '' && curTabIndex === 0"
+      class="search-float-panel"
+    >
+      <div class="search-left">
+        <i
+          class="iconfont"
+          :class="showReplace ? 'icon-xiangxia2' : 'icon-xiangyou'"
+          @click="showReplace = !showReplace"
+        ></i>
+      </div>
+      <div class="search-right">
+        <div class="search-content">
+          <input
+            v-model="searchText"
+            class="search-input"
+            placeholder="查找"
+            @input="searchTextHandler"
+            @keyup.enter="searchNext"
+            @keyup.arrowdown="searchNext"
+            @keyup.arrowup="searchPrev"
+          />
+          <div class="search-controls">
+            <button class="search-btn" @click="searchPrev" title="上一个（↑）">
+              ↑
+            </button>
+            <button class="search-btn" @click="searchNext" title="下一个（↓）">
+              ↓
+            </button>
+          </div>
+          <div class="search-info">
+            <span v-if="matchCount > 0" class="match-count"
+              >{{ currentMatchIndex }}/{{ matchCount }}</span
+            >
+          </div>
+          <button class="search-close" @click="toggleSearchPanel" title="关闭">
+            ×
           </button>
         </div>
-        <div class="search-info">
-          <span v-if="matchCount > 0" class="match-count"
-            >{{ currentMatchIndex }}/{{ matchCount }}</span
-          >
+        <div class="search-content" v-if="showReplace">
+          <input
+            v-model="replaceText"
+            class="search-input"
+            placeholder="替换"
+          />
+          <div class="search-controls">
+            <button class="search-btn" @click="replaceCurrent" title="替换">
+              <i class="iconfont icon-chazhaotihuan1"></i>
+            </button>
+            <button class="search-btn" @click="replaceAll" title="全部替换">
+              <i class="iconfont icon-quanbutihuan"></i>
+            </button>
+          </div>
         </div>
-        <button class="search-close" @click="toggleSearchPanel" title="关闭">
-          ×
-        </button>
       </div>
     </div>
   </div>
 </template>
 
 <style>
+.search-left {
+  display: flex;
+  align-items: center;
+}
+.search-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .edit-bar {
   height: 30px;
   display: flex;
@@ -670,7 +845,7 @@ const insertStyle = (styleStr) => {
 /* 优化查找替换浮动块样式 - 单行紧凑版 */
 .search-float-panel {
   position: fixed;
-  top: 10%;
+  top: 100px;
   right: 20px;
   background-color: white;
   border: 1px solid #ddd;
@@ -680,6 +855,17 @@ const insertStyle = (styleStr) => {
   padding: 4px 8px;
   display: flex;
   align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.replace-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 10px;
+  flex-direction: row;
 }
 
 .search-content {
@@ -693,6 +879,10 @@ const insertStyle = (styleStr) => {
   color: #333;
   font-size: 13px;
   white-space: nowrap;
+}
+.search-float-panel i:hover {
+  color: #409eff;
+  cursor: pointer;
 }
 
 .search-input {
@@ -714,7 +904,7 @@ const insertStyle = (styleStr) => {
 .search-controls {
   display: flex;
   flex-direction: row;
-  gap: 2px;
+  gap: 5px;
 }
 
 .search-btn {
