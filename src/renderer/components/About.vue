@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useAppStore } from "../store/appStore";
 import { ElMessage, ElMessageBox } from "element-plus";
+const { shell } = window.require("electron");
 const { ipcRenderer } = window.require("electron");
 const { aboutShow } = storeToRefs(useAppStore());
 const tindex = ref(0);
@@ -18,7 +19,7 @@ const tabContents = ref([
          点击分割按钮就会进行分割成多段文字。
       3、可以对导入的文字进行简单编辑，譬如消除空行，段落首行缩进。
 
-  开源地址：https://github.com/laowus/You-Ebook
+  开源地址：<button @click='openUrl'>https://github.com/laowus/You-Ebook</button>
   如有问题可以以下方式进行联系：
       邮箱：pjhxl@qq.com 
       Q Q：37156760
@@ -88,6 +89,10 @@ const restoreData = () => {
       });
     });
 };
+
+const openUrl = () => {
+  shell.openExternal("https://github.com/laowus/You-Ebook");
+};
 </script>
 <template>
   <el-dialog v-model="aboutShow" title="关于" width="70%">
@@ -107,18 +112,54 @@ const restoreData = () => {
       <!-- 动态显示内容 -->
       <div class="tab-content">
         <div v-if="tindex === 0" class="content-item">
-          <!-- 使用 v-html 渲染替换后的内容 -->
-          <div v-html="tabContents[0].replace(/\n/g, '<br>')"></div>
+          <p>
+            YouEbook（捡书） 是一个基于 Vue3 + Electron
+            开发的跨平台电子书编辑器，支持 macOS、Windows、Linux
+            等操作系统。(本人只有Windows系统电脑, 其他没有平台测试。)
+          </p>
+          <h2>功能：</h2>
+
+          <p>
+            1、导入txt，epub，html，mobi等文件，进行编辑，然后导出生成epub/txt/html文件。
+          </p>
+          <p>
+            2、导入的文本可以分割章节，前提是你的文本已经有章节的字符，譬如（第一章
+            ... 第二章 ...)这种文字, 点击分割按钮就会进行分割成多段文字。
+          </p>
+          <p>3、可以对导入的文字进行简单编辑，譬如消除空行，段落首行缩进。</p>
+          <h2>开源地址：</h2>
+          <p>
+            https://github.com/laowus/You-Ebook
+            <el-button
+              style="margin-left: 10px"
+              type="primary"
+              @click="openUrl"
+            >
+              打开
+            </el-button>
+            <br />
+            如果您喜欢这个项目，请考虑给个star, 谢谢!
+          </p>
+
+          <p>
+            <br />
+            如有问题可以以下方式进行联系：
+            <br />
+            邮箱：pjhxl@qq.com
+            <br />Q Q：37156760<br />
+            QQ群：616712461 <br />
+          </p>
         </div>
+
         <div v-else-if="tindex === 1" class="content-item">
           {{ tabContents[1] }}
           <div class="payment-methods">
             <div class="payment-item">
-              <img src="../assets/images/weichat.jpg" width="200" />
+              <img src="../assets/images/weichat.jpg" height="250" />
               <p>微信支付</p>
             </div>
             <div class="payment-item">
-              <img src="../assets/images/alipay.jpg" width="200" />
+              <img src="../assets/images/alipay.jpg" height="250" />
               <p>支付宝支付</p>
             </div>
           </div>
@@ -183,6 +224,12 @@ const restoreData = () => {
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  /* 保留原有的其他样式 */
+  user-select: text;
+  -webkit-user-select: text; /* Safari浏览器 */
+  -moz-user-select: text; /* Firefox浏览器 */
+  -ms-user-select: text; /* IE/Edge浏览器 */
+  cursor: text;
 }
 
 .tab-nav {
@@ -217,12 +264,13 @@ const restoreData = () => {
 .payment-methods {
   display: flex;
   justify-content: center;
-  gap: 40px;
+  gap: 100px;
   margin-top: 20px;
 }
 
 .payment-item {
   text-align: center;
+  padding: 0 20px;
 }
 
 .payment-item img {

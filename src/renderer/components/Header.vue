@@ -525,6 +525,7 @@ const restartApp = () => {
   align-items: center;
   justify-content: center;
   display: flex;
+  cursor: pointer;
 }
 .tabname.active {
   background-color: white;

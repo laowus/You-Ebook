@@ -1,32 +1,41 @@
 <script setup>
-const { ipcRenderer } = window.require('electron');
+const { ipcRenderer } = window.require("electron");
 const handleClose = () => {
-    ipcRenderer.send('window-close');
-}
+  ipcRenderer.send("window-close");
+};
 const handleMax = () => {
-    ipcRenderer.send('window-max');
-}
+  ipcRenderer.send("window-max");
+};
 const handleMix = () => {
-    ipcRenderer.send('window-min');
-}
+  ipcRenderer.send("window-min");
+};
 </script>
 
 <template>
-    <div class="tool">
-        <span class="iconfont icon-zuixiaohua" @click="handleMix"></span>
-        <span class="iconfont icon-zuidahua_huaban1" @click="handleMax"></span>
-        <span class="iconfont icon-guanbi" @click="handleClose"></span>
-    </div>
+  <div class="tool">
+    <span class="iconfont icon-zuixiaohua" @click="handleMix"></span>
+    <span class="iconfont icon-zuidahua_huaban1" @click="handleMax"></span>
+    <span class="iconfont icon-guanbi" @click="handleClose"></span>
+  </div>
 </template>
 
 <style>
 .tool {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    padding-right: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding-right: 20px;
+  gap: 10px;
+}
+.tool span {
+  font-size: 18px;
+  padding: 5px;
+}
 
+.tool span:hover {
+  font-size: 18px;
+  cursor: pointer;
+  background-color: antiquewhite;
 }
 </style>
