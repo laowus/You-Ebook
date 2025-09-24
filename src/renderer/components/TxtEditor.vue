@@ -66,7 +66,6 @@ const searchTextHandler = () => {
 
   // 如果有匹配项，选中第一个
   if (matchResults.length > 0) {
-    console.log("matchResults", matchResults);
     selectMatch(0);
   }
 };
@@ -219,7 +218,6 @@ const syncScrollTop = () => {
 // 滚动到顶部的方法
 const scrollRightWrapperToTop = () => {
   if (editArea.value) {
-    console.log("滚动到顶部");
     editArea.value.scrollTop = 0;
   }
 };
@@ -231,7 +229,6 @@ watch(
   (val) => {
     queueMicrotask(() => {
       const textarea = editArea.value;
-      console.log("textarea", textarea);
       if (!textarea) return;
       const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
       const scrollHeight = textarea.scrollHeight;
@@ -308,7 +305,6 @@ const formatTag = (tag) => {
 
   // 获取选中的文本
   const selectedText = value.substring(selectionStart, selectionEnd);
-  console.log("selectedText", selectedText);
   //判断selectedText 是否包含tag
   if (selectedText === "" || selectedText.length === 0) {
     ElMessage({

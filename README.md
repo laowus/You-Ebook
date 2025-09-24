@@ -44,6 +44,12 @@ QQ:37156760 (备注：You Ebook)
       ![Github snap 11](https://github.com/laowus/You-Ebook/blob/main/snapshot/11.jpg)
 - [x] 4、 数据备份, 数据恢复。
       备份 bookdata 文件夹下面 zip 文件, 恢复时解压到程序目录下的 bookdata 文件夹中。
+      ![Github snap 13](https://github.com/laowus/You-Ebook/blob/main/snapshot/13.jpg)
+- [x] 5、 编辑窗口添加一个查找和替换文字的操作框。
+  - 查找：输入要查找的文字，点击查找按钮，会在编辑窗口中查找匹配的文字。
+  - 替换：输入要替换的文字，点击替换按钮，会将当前选中的文字替换为输入的文字。
+  - 全部替换：输入要替换的文字，点击全部替换按钮，会将所有匹配的文字都替换为输入的文字。
+    ![Github snap 12](https://github.com/laowus/You-Ebook/blob/main/snapshot/12.jpg)
 
 ### 开发/测试环境
 
