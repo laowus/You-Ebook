@@ -51,6 +51,16 @@ QQ:37156760 (备注：You Ebook)
   - 全部替换：输入要替换的文字，点击全部替换按钮，会将所有匹配的文字都替换为输入的文字。
     ![Github snap 12](https://github.com/laowus/You-Ebook/blob/main/snapshot/12.jpg)
 
+-v 0.0.5
+
+- [x] 6、 支持章节标题添加 html 标签。
+      批量对内容页添加章名
+      ![Github snap 14](https://github.com/laowus/You-Ebook/blob/main/snapshot/14.jpg)
+
+- [x] 7、修改正则
+      修复一些 bug，添加 无法正则的提示。
+      优化正则，支持对内容页添加章名的正则匹配。支持 一 二 这种章名进行分割.
+
 ### 开发/测试环境
 
 - Windows 10( 个人电脑只有 Windows 系统的,linux 苹果系统没有测试)

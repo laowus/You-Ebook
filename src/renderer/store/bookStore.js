@@ -14,6 +14,7 @@ export const useBookStore = defineStore("bookStore", {
       content: "",
     }, //当前编辑的章节
     isAllEdit: false, //是否全部编辑
+    isTitleIn: false, //保留章名在内容里面
     selectColor: "#FF0000",
   }),
   getters: {},
@@ -33,6 +34,10 @@ export const useBookStore = defineStore("bookStore", {
     setIsAllEdit() {
       this.isAllEdit = !this.isAllEdit;
     },
+    setTitleIn() {
+      this.isTitleIn = !this.isTitleIn;
+    },
+
     delTocByHref(href) {
       const removeItem = (items) => {
         for (let i = items.length - 1; i >= 0; i--) {
@@ -261,7 +266,7 @@ export const useBookStore = defineStore("bookStore", {
     strategies: [
       {
         storage: localStorage,
-        paths: ["selectColor"],
+        paths: ["selectColor", "isTitleIn"],
       },
     ],
   },

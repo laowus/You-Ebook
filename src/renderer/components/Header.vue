@@ -10,10 +10,9 @@ import { parseFile, readTxtFile, getTextFromHTML } from "../common/utils";
 import { useBookStore } from "../store/bookStore";
 import { useAppStore } from "../store/appStore";
 const { ipcRenderer } = window.require("electron");
-const { curChapter, metaData, isFirst, toc, isAllEdit } = storeToRefs(
-  useBookStore()
-);
-const { setMetaData, setFirst, setIsAllEdit } = useBookStore();
+const { curChapter, metaData, isFirst, toc, isAllEdit, isTitleIn } =
+  storeToRefs(useBookStore());
+const { setMetaData, setFirst, setIsAllEdit, setTitleIn } = useBookStore();
 const { showHistoryView, showNewBook, showAbout } = useAppStore();
 
 const curIndex = ref(1);
@@ -121,33 +120,83 @@ const deleteEmptyLines = async () => {
   }
 };
 
-// 缩进
-const indentFirstLine = async () => {
+//删除章名
+const deleteTitle = async () => {
+  //
   if (curChapter.value.content) {
-    const indentString = "    ".repeat(indentNum.value);
-    console.log("空格", indentString, "空格");
     // 按换行符分割字符串
-    const lines = curChapter.value.content
-      .split("\n")
-      .map((line) => line.trimStart());
-    // 给每一行添加缩进
-    const indentedLines = lines.map((line) => indentString + line);
-    // 重新拼接字符串
-    curChapter.value.content = indentedLines.join("\n");
+    const lines = curChapter.value.content.split("\n");
+    // 过滤掉空行
+    const tempTitle = lines[0].trim();
+    if (tempTitle) {
+      console.log("删除章名", tempTitle);
+      if (tempTitle.includes(curChapter.value.label)) {
+        // 删除第一行
+        lines.shift();
+        // 重新拼接字符串
+        curChapter.value.content = lines.join("\n");
+      }
+    }
+  }
+  //批量删除全部章名
+  if (isAllEdit.value) {
+    const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
+    if (res.success) {
+      for (const [index, chapter] of res.data.entries()) {
+        const lines = chapter.content.split("\n");
+        const tempTitle = lines[0].trim();
+        if (tempTitle) {
+          if (tempTitle.includes(chapter.label)) {
+            console.log("删除章名", tempTitle);
+            lines.shift();
+            chapter.content = lines.join("\n");
+          }
+        }
+        iCTip(
+          "处理 " +
+            chapter.label +
+            "  (" +
+            (index + 1) +
+            "/" +
+            res.data.length +
+            ")"
+        );
+        await updateChapter(chapter);
+      }
+      EventBus.emit("hideTip");
+    }
+  }
+};
+
+//添加章名
+const addTitle = async () => {
+  if (curChapter.value.content) {
+    //判断第一行是否有章名
+    const tempTitle = curChapter.value.content.split("\n")[0].trim();
+    if (!tempTitle.includes(curChapter.value.label)) {
+      // 按换行符分割字符串
+      const lines = curChapter.value.content.split("\n");
+      // 给第一行添加章名
+      lines.unshift(curChapter.value.label);
+      // 重新拼接字符串
+      curChapter.value.content = lines.join("\n");
+    }
   }
   //书籍全部章节内容去空行
   if (isAllEdit.value) {
     const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
     if (res.success) {
       for (const [index, chapter] of res.data.entries()) {
-        const indentString = "    ".repeat(indentNum.value);
-        // 按换行符分割字符串
-        const lines = chapter.content
-          .split("\n")
-          .map((line) => line.trimStart());
-        // 给每一行添加缩进
-        const indentedLines = lines.map((line) => indentString + line);
-        chapter.content = indentedLines.join("\n");
+        //判断第一行是否有章名
+        const tempTitle = chapter.content.split("\n")[0].trim();
+        if (!tempTitle.includes(chapter.label)) {
+          // 按换行符分割字符串
+          const lines = chapter.content.split("\n");
+          // 给第一行添加章名
+          lines.unshift("<h3>" + chapter.label + "</h3>");
+          // 重新拼接字符串
+          chapter.content = lines.join("\n");
+        }
         iCTip(
           "处理 " +
             chapter.label +
@@ -215,7 +264,8 @@ const regString = () => {
   const chapters = getChapters(
     curChapter.value.content,
     curChapter.value.label,
-    chapterRegex
+    chapterRegex,
+    isTitleIn.value
   );
   console.log("章节", chapters);
   if (!Array.isArray(chapters) || chapters.length === 0) {
@@ -428,6 +478,27 @@ const restartApp = () => {
             ></span>
             <span>首行缩进</span>
           </button>
+
+          <button
+            class="btn-icon"
+            @click="deleteTitle"
+            :disabled="!curChapter.bookId"
+          >
+            <span
+              class="iconfont icon-shanchukonghang"
+              style="color: red"
+            ></span>
+            <span>删除章名</span>
+          </button>
+
+          <button
+            class="btn-icon"
+            @click="addTitle"
+            :disabled="!curChapter.bookId"
+          >
+            <span class="iconfont icon-xinjian"></span>
+            <span>添加章名</span>
+          </button>
           <button class="btn-icon" @click="setIsAllEdit">
             <span
               class="iconfont"
@@ -469,6 +540,15 @@ const restartApp = () => {
               style="width: 150px; height: 20px; font-size: 12px"
               placeholder="多个用|分开"
             />
+
+            <button class="btn-icon" @click="setTitleIn">
+              <span
+                class="iconfont"
+                :class="isTitleIn ? 'icon-gouxuananniu' : 'icon-gouxuananniu1'"
+                style="color: green; font-size: 18px; padding-top: 8px"
+              ></span>
+              <span style="padding-top: 8px">保留章名</span>
+            </button>
             <button
               class="btn-icon"
               @click="regString"

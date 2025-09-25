@@ -1,6 +1,5 @@
-// 优化后的getChapters函数 - 保留第一个匹配前面的内容
-
-export const getChapters = (content, title, chapterRegex) => {
+export const getChapters = (content, title, chapterRegex, isTitleIn) => {
+  console.log("isTitleIn", isTitleIn);
   // 输入参数验证
   if (!content || typeof content !== "string" || !chapterRegex) {
     return [];
@@ -25,7 +24,9 @@ export const getChapters = (content, title, chapterRegex) => {
         chapters.push({
           index: chapterIndex,
           label: title, // 可以自定义前言的标签名称
-          content: prologueContent,
+          content: isTitleIn
+            ? `<h3>${title}</h3>\n\n${prologueContent}`
+            : prologueContent, // 当isTitleIn为true时，将title添加到content中
         });
         chapterIndex++;
         hasPrologue = true;
@@ -66,7 +67,7 @@ export const getChapters = (content, title, chapterRegex) => {
     chapters.push({
       index: chapterIndex,
       label: trimmedTitle,
-      content: "",
+      content: isTitleIn ? `<h3>${trimmedTitle}</h3>\n\n` : "", // 当isTitleIn为true时，将label添加到content中作为开头
     });
 
     chapterIndex++;
@@ -83,7 +84,17 @@ export const getChapters = (content, title, chapterRegex) => {
   if (chapters.length > 0) {
     let lastChapterContent = content.slice(lastIndex);
     lastChapterContent = lastChapterContent.replace(/^\n/, "").trim();
-    chapters[chapters.length - 1].content += lastChapterContent;
+
+    // 如果isTitleIn为true，确保内容与标题之间有换行分隔
+    if (
+      isTitleIn &&
+      chapters[chapters.length - 1].content &&
+      lastChapterContent
+    ) {
+      chapters[chapters.length - 1].content += `\n\n${lastChapterContent}`;
+    } else {
+      chapters[chapters.length - 1].content += lastChapterContent;
+    }
   }
 
   return chapters;
