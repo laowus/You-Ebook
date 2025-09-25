@@ -56,6 +56,7 @@ QQ:37156760 (备注：You Ebook)
 - [x] 6、 支持章节标题添加 html 标签。
       批量对内容页添加章名
       ![Github snap 14](https://github.com/laowus/You-Ebook/blob/main/snapshot/14.jpg)
+      ![Github snap 15](https://github.com/laowus/You-Ebook/blob/main/snapshot/15.jpg)
 
 - [x] 7、修改正则
       修复一些 bug，添加 无法正则的提示。
