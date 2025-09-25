@@ -49,6 +49,7 @@ const onDrop = (fromHref, toHref) => {
   moveToc(fromHref, toHref);
 };
 EventBus.on("addChapter", (res) => {
+  console.log("添加章节", res);
   addTocByHref(res.href, res.chapter); //添加到数据库
 });
 const showContextMenu = (event, href) => {
@@ -68,6 +69,7 @@ const updateCurChapter = (href) => {
     metaData.value.bookId,
     href
   );
+  console.log("获取章节", chapter);
   //显示内容
   curChapter.value = chapter.data;
   tocView.setCurrentHref(href);

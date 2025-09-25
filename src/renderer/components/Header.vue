@@ -184,8 +184,24 @@ const regString = () => {
   let attach = $("#attach").value.trim();
   // 当 attach 不为空时才拼接正则部分
   const attachPart = attach ? `|^\\s*(${attach})` : "";
-  // 动态拼接正则表达式，限制章名长度不超过 20 个字符
-  const regexPattern = `^\\s*(([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])${attachPart})(.{0,${strNum}}[^\\n]?)?$`;
+  // 动态构建章节匹配部分，处理pre和aft为空的情况
+  let chapterMatchPart = "";
+  if (pre && aft) {
+    // 如果pre和aft都不为空
+    chapterMatchPart = `([${pre}][一二三四五六七八九十百千万零0-9]+[${aft}])`;
+  } else if (pre) {
+    // 如果只有pre不为空
+    chapterMatchPart = `([${pre}][一二三四五六七八九十百千万零0-9]+)`;
+  } else if (aft) {
+    // 如果只有aft不为空
+    chapterMatchPart = `([一二三四五六七八九十百千万零0-9]+[${aft}])`;
+  } else {
+    // 如果pre和aft都为空
+    chapterMatchPart = `([一二三四五六七八九十百千万零0-9]+)`;
+  }
+
+  // 动态拼接完整的正则表达式
+  const regexPattern = `^\s*(${chapterMatchPart}${attachPart})(.{0,${strNum}}[^\n]?)?$`;
   const chapterRegex = new RegExp(regexPattern, "gm");
   console.log(chapterRegex);
 
@@ -198,12 +214,17 @@ const regString = () => {
   };
   const chapters = getChapters(
     curChapter.value.content,
-    curChapter.value.title,
+    curChapter.value.label,
     chapterRegex
   );
-  insertChapters(chapters, curChapter.value.id).then(
-    ipcRenderer.send("db-update-chapter", tempChapter)
-  );
+  console.log("章节", chapters);
+  if (!Array.isArray(chapters) || chapters.length === 0) {
+    ElMessage.error("未匹配到章节，请检查正则表达式");
+    return;
+  }
+  insertChapters(chapters, curChapter.value.id).then(() => {
+    ipcRenderer.send("db-update-chapter", tempChapter);
+  });
 };
 const iCTip = (text) => {
   EventBus.emit("showTip", text);
