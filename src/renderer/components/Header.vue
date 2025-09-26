@@ -120,6 +120,49 @@ const deleteEmptyLines = async () => {
   }
 };
 
+// 缩进
+const indentFirstLine = async () => {
+  if (curChapter.value.content) {
+    const indentString = "    ".repeat(indentNum.value);
+    console.log("空格", indentString, "空格");
+    // 按换行符分割字符串
+    const lines = curChapter.value.content
+      .split("\n")
+      .map((line) => line.trimStart());
+    // 给每一行添加缩进
+    const indentedLines = lines.map((line) => indentString + line);
+    // 重新拼接字符串
+    curChapter.value.content = indentedLines.join("\n");
+  }
+  //书籍全部章节内容去空行
+  if (isAllEdit.value) {
+    const res = ipcRenderer.sendSync("db-get-chapters", metaData.value.bookId);
+    if (res.success) {
+      for (const [index, chapter] of res.data.entries()) {
+        const indentString = "    ".repeat(indentNum.value);
+        // 按换行符分割字符串
+        const lines = chapter.content
+          .split("\n")
+          .map((line) => line.trimStart());
+        // 给每一行添加缩进
+        const indentedLines = lines.map((line) => indentString + line);
+        chapter.content = indentedLines.join("\n");
+        iCTip(
+          "处理 " +
+            chapter.label +
+            "  (" +
+            (index + 1) +
+            "/" +
+            res.data.length +
+            ")"
+        );
+        await updateChapter(chapter);
+      }
+      EventBus.emit("hideTip");
+    }
+  }
+};
+
 //删除章名
 const deleteTitle = async () => {
   //

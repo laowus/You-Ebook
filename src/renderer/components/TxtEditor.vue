@@ -1,6 +1,7 @@
 <script setup>
 import { ref, inject, watch, onMounted, toRaw, computed } from "vue";
 const { ipcRenderer } = window.require("electron");
+import { ElMessage, ElMessageBox } from "element-plus";
 import { storeToRefs } from "pinia";
 import { useBookStore } from "../store/bookStore";
 import EventBus from "../common/EventBus";
