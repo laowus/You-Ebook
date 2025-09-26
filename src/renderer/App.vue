@@ -69,7 +69,6 @@ const updateCurChapter = (href) => {
     metaData.value.bookId,
     href
   );
-  console.log("获取章节", chapter);
   //显示内容
   curChapter.value = chapter.data;
   tocView.setCurrentHref(href);
