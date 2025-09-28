@@ -278,23 +278,26 @@ const regString = () => {
   const attachPart = attach ? `|^\\s*(${attach})` : "";
   // 动态构建章节匹配部分，处理pre和aft为空的情况
   let chapterMatchPart = "";
-  if (pre && aft) {
-    // 如果pre和aft都不为空
-    chapterMatchPart = ` *[${pre}][一二三四五六七八九十百千万零0-9]+[${aft}]\\s`;
-  } else if (pre) {
-    // 匹配 第一 我的一天
-    chapterMatchPart = `^ *[${pre}][一二三四五六七八九十百千万零0-9]+\\s*`;
-  } else if (aft) {
-    // 匹配 一章 我的一天
-    chapterMatchPart = `^ *[一二三四五六七八九十百千万零0-9]+[${aft}]\\s*`;
-  } else {
-    // 一 前后都是空格 一   一、
-    // 修改为精确匹配章节标题，要求数字后面必须跟标点符号，或者单独成行
-    chapterMatchPart = `^\\s*[一二三四五六七八九十百千万零0-9]+[、。，,.]\\s*$|^\\s*[一二三四五六七八九十百千万零0-9]+\\s*$`;
-  }
+  // if (pre && aft) {
+  //   // 如果pre和aft都不为空
+  //   chapterMatchPart = ` *[${pre}][一二三四五六七八九十百千万零0-9]+[${aft}]\\s`;
+  // } else if (pre) {
+  //   // 匹配 第一 我的一天
+  //   chapterMatchPart = `^ *[${pre}][一二三四五六七八九十百千万零0-9]+\\s*`;
+  // } else if (aft) {
+  //   // 匹配 一章 我的一天
+  //   chapterMatchPart = `^ *[一二三四五六七八九十百千万零0-9]+[${aft}]\\s*`;
+  // } else {
+  //   // 一 前后都是空格 一   一、
+  //   // 修改为精确匹配章节标题，要求数字后面必须跟标点符号，或者单独成行
+  //   chapterMatchPart = `^\\s*[一二三四五六七八九十百千万零0-9]+[、。，,.]\\s*$|^\\s*[一二三四五六七八九十百千万零0-9]+\\s*$`;
+  // }
 
-  // 动态拼接完整的正则表达式
+  chapterMatchPart = `^ *[${pre}]?[一二三四五六七八九十百千万零0-9]+[${aft}]?\s*`;
+
+  // // 动态拼接完整的正则表达式
   const regexPattern = `(${chapterMatchPart}${attachPart})(.{0,${strNum}}[^\\n]?)?$`;
+
   const chapterRegex = new RegExp(regexPattern, "gm");
   console.log(chapterRegex);
 

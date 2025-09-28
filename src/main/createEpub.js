@@ -56,6 +56,7 @@ const formatText = (text) => {
 const createEpub = async (chapters, metadata, mainWin) => {
   return new Promise((resolve, reject) => {
     try {
+      const imagesList = [];
       const { author, title, cover, bookId } = metadata; // 从 metadata 中获取封面路径
       const zip = new JSZip();
       zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
@@ -100,6 +101,8 @@ const createEpub = async (chapters, metadata, mainWin) => {
               addFilesToZip(filePath, `${zipPath}/${file}`);
             } else {
               // 添加文件到ZIP
+              // 记录图片路径
+              imagesList.push(`OEBPS/images/${file}`);
               zip
                 .folder("OEBPS")
                 .folder("images")
@@ -154,6 +157,14 @@ const createEpub = async (chapters, metadata, mainWin) => {
           <item id="cover-image" href="OEBPS/${coverFileName}" media-type="image/jpeg"/>
           <item id="cover" href="OEBPS/cover.xhtml" media-type="application/xhtml+xml"/>
         `);
+      }
+      // 添加图片到 manifest
+      if (imagesList.length > 0) {
+        imagesList.forEach((image, index) => {
+          manifestItems.push(`
+          <item id="img${index}" href="${image}" media-type="image/jpeg"/>
+        `);
+        });
       }
 
       const manifest = manifestItems.join("").trim();

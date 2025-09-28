@@ -42,6 +42,35 @@ const fileHandle = () => {
     event.returnValue = imageDirBook;
   });
 
+  ipcMain.handle("set-cover", (event, cover, bookId) => {
+    console.log("set-cover", cover, bookId);
+    const coverPath = path.join(coverDir, `${bookId}.jpg`);
+    try {
+      // 先尝试删除已存在的封面文件（如果有）
+      try {
+        fs.unlinkSync(coverPath);
+      } catch (err) {
+        // 忽略文件不存在的错误
+        if (err.code !== "ENOENT") {
+          console.warn("删除旧封面时出现非文件不存在的错误:", err);
+        }
+      }
+
+      // 复制选中的图片文件到coverPath
+      fs.copyFileSync(cover, coverPath);
+      console.log("封面图片复制成功，路径:", coverPath);
+
+      // 返回成功信息和封面路径
+      return {
+        success: true,
+        coverPath: coverPath,
+      };
+    } catch (error) {
+      console.error("封面图片复制失败:", error);
+      throw new Error("封面图片复制失败: " + error.message);
+    }
+  });
+
   ipcMain.handle("select-image", async (event, bookId) => {
     const result = await dialog.showOpenDialog({
       filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "gif"] }],

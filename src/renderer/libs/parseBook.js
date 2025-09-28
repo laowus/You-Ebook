@@ -60,24 +60,17 @@ export const open = async (file) => {
   // 将整个处理过程封装在一个 Promise 中
   return new Promise(async (resolve, reject) => {
     try {
-      const timestamp = Date.now();
       // 1. 先解析书籍内容
       const book = await makeBook(file.path);
       console.log(book);
 
       // 2. 处理书籍元数据和章节插入
       if (isFirst.value) {
-        const coverDir = ipcRenderer.sendSync("get-cover-dir", "ping");
-        let coverPath = "";
-        if (book.metadata.cover) {
-          coverPath = path.join(coverDir, timestamp + ".jpg");
-          await saveCoverToLocal(book.metadata.cover, coverPath);
-        }
         let _metaData = {
           title: book.metadata.title,
           author: book.metadata.author.name,
           description: book.metadata.description,
-          cover: coverPath,
+          cover: book.metadata.cover,
           path: file.path,
         };
 
@@ -86,6 +79,17 @@ export const open = async (file) => {
         ipcRenderer.once("db-insert-book-response", async (event, res) => {
           const bookId = res.bookId;
           setMetaData({ ..._metaData, bookId: bookId });
+
+          const coverDir = ipcRenderer.sendSync("get-cover-dir", "ping");
+          let coverPath = "";
+          if (book.metadata.cover) {
+            coverPath = path.join(coverDir, `${bookId}.jpg`);
+            //假如coverPath 存在就删除
+            if (fs.existsSync(coverPath)) {
+              fs.unlinkSync(coverPath);
+            }
+            await saveCoverToLocal(book.metadata.cover, coverPath);
+          }
 
           // 3. 解压 EPUB 文件并处理图片
           let imageMap = null;

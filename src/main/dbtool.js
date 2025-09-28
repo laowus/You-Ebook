@@ -171,9 +171,10 @@ const insertBook = (book, event) => {
 };
 
 const updateBook = (book, event) => {
+  console.log(book);
   db.run(
     `UPDATE ee_book SET title = ?, author = ?, description = ?, cover = ?, updateTime = datetime('now', 'localtime') WHERE id = ?`,
-    [book.title, book.author, book.description, book.cover, book.id],
+    [book.title, book.author, book.description, book.cover, book.bookId],
     function (err) {
       if (err) {
         console.error(err.message);
@@ -196,7 +197,7 @@ const delBook = (event, bookId) => {
 };
 
 const getBooks = (event) => {
-  db.all(`SELECT * FROM ee_book WHERE isDel = 0`, (err, rows) => {
+  db.all(`SELECT *, id as bookId FROM ee_book WHERE isDel = 0`, (err, rows) => {
     if (err) {
       console.error("Error in getBooks query:", err.message);
       event.returnValue = { success: false, error: err.message };

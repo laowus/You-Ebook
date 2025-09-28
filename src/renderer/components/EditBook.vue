@@ -61,6 +61,20 @@ const saveEditBook = () => {
   // 这里添加保存书籍信息的逻辑
   console.log("meta", meta.value);
   if (meta.value.title && meta.value.author) {
+    // 发送设置封面图片的事件
+    if (meta.value.cover) {
+      ipcRenderer
+        .invoke("set-cover", meta.value.cover, meta.value.bookId)
+        .then((res) => {
+          if (res.success) {
+            meta.value.cover = res.coverPath;
+          } else {
+            ElMessage.error("设置封面图片失败");
+            return;
+          }
+        });
+    }
+
     ipcRenderer.send("db-update-book", toRaw(meta.value));
     ElMessage.success("书籍信息保存成功");
     if (meta.value.bookId === metaData.value.bookId) {
