@@ -192,9 +192,12 @@ const unzipEpub = (epubPath, extractPath, bookId) => {
           fs.writeFileSync(targetPath, entry.getData());
 
           // 记录原始路径和新路径的映射
-          imageMap.set(entry.entryName, path.join("images", uniqueName));
+          imageMap.set(entry.entryName, "images/" + uniqueName);
           console.log(
-            `已提取并重命名图片: ${entry.entryName} -> ${uniqueName}`
+            `已提取并重命名图片: ${entry.entryName} -> ${path.join(
+              "images",
+              uniqueName
+            )}`
           );
         }
         // else if (!entry.isDirectory) {
@@ -261,6 +264,7 @@ const getTextFromHTML = (htmlString, imageMap = null) => {
         let found = false;
         for (let [originalPath, newPath] of imageMap.entries()) {
           if (src.includes(path.basename(originalPath))) {
+            console.log(`替换图片路径: ${src} -> ${newPath}`);
             node.setAttribute("src", newPath);
             found = true;
             break;
@@ -270,7 +274,15 @@ const getTextFromHTML = (htmlString, imageMap = null) => {
           console.log(`未找到匹配的图片路径: ${src}`);
         }
       }
-      return node.outerHTML;
+      // 不再直接返回outerHTML，而是手动构建带自闭合符号的标签
+      let imgHtml = `<img`;
+      for (let i = 0; i < node.attributes.length; i++) {
+        const attr = node.attributes[i];
+        imgHtml += ` ${attr.name}="${attr.value}"`;
+      }
+      imgHtml += ` />`;
+      console.log("修改后的图片", imgHtml);
+      return imgHtml;
     } else if (node.nodeName === "BR") {
       return "\n";
     } else if (node.nodeName === "P") {

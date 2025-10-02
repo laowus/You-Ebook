@@ -63,6 +63,15 @@ const delBook = (row) => {
 };
 
 const editBook = (row) => {
+  console.log("编辑书籍信息=>", row);
+  const coverPath = ipcRenderer.sendSync("get-cover-path", row.id);
+  console.log("Fetched cover path for editing:", coverPath);
+  if (coverPath) {
+    row.cover = coverPath;
+  } else {
+    row.cover = "";
+  }
+  
   setEditBookData(row); // 设置要编辑的书籍数据
   hideHistoryView();
   editBookShow.value = true; // 显示 EditBook 弹窗
@@ -80,18 +89,22 @@ const resetData = () => {
   )
     .then(() => {
       // 监听重置表响应
-      ipcRenderer.once("db-reset-tables-response", (event, response) => {
+      ipcRenderer.once("clear-data-reply", (event, response) => {
         if (response.success) {
           console.log("Tables reset successfully");
           // 发送重启程序请求
           hideHistoryView();
+          ElMessage({
+            type: "success",
+            message: "数据清除成功!",
+          });
           ipcRenderer.send("restart-app");
         } else {
           console.error("Error resetting tables:", response.error);
         }
       });
       // 发送重置表请求
-      ipcRenderer.send("db-reset-tables");
+      ipcRenderer.send("clear-data");
     })
     .catch(() => {
       ElMessage({

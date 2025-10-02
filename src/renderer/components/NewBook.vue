@@ -52,30 +52,24 @@ const handleDoubleClick = () => {
 
 const addBook = () => {
   if (meta.value.title && meta.value.author) {
-    if (meta.value.cover) {
-      //获取保存文件夹
-      const coverDir = ipcRenderer.sendSync("get-cover-dir", "ping");
-      const timestamp = Date.now();
-      const coverPath = path.join(coverDir, timestamp + ".jpg");
-      // 复制封面文件
-      fs.copyFile(meta.value.cover, coverPath, (err) => {
-        if (err) {
-          console.error("封面文件复制失败:", err);
-          ElMessage.error("封面文件复制失败");
-        } else {
-          console.log("封面文件复制成功", coverPath);
-          meta.value.cover = coverPath;
-        }
-        ipcRenderer.send("db-insert-book", toRaw(meta.value));
-      });
-    } else {
-      ipcRenderer.send("db-insert-book", toRaw(meta.value));
-    }
     // 调用主进程的 addBook 方法
     ipcRenderer.once("db-insert-book-response", (event, data) => {
       console.log("metaData", meta);
       if (data.success) {
         meta.value.bookId = data.bookId;
+        if (meta.value.cover) {
+          ipcRenderer
+            .invoke("set-cover", meta.value.cover, data.bookId)
+            .then((res) => {
+              if (res.success) {
+                meta.value.cover = res.coverPath;
+              } else {
+                ElMessage.error("设置封面图片失败");
+                return;
+              }
+            });
+        }
+
         setMetaData(meta.value);
         const chapter = {
           bookId: meta.value.bookId,
@@ -89,6 +83,8 @@ const addBook = () => {
         hideNewBook();
       }
     });
+
+    ipcRenderer.send("db-insert-book", toRaw(meta.value));
 
     hideNewBook();
   } else {

@@ -24,6 +24,11 @@ const fileHandle = () => {
     event.returnValue = coverDir;
   });
 
+  ipcMain.on("get-cover-path", (event, bookId) => {
+    const coverPath = path.join(coverDir, `${bookId}.jpg`);
+    event.returnValue = coverPath;
+  });
+
   // 获取解压epub文件目录
   ipcMain.on("get-epub-dir", (event, bookId) => {
     const epubDirBook = path.join(epubDir, bookId);
@@ -42,10 +47,12 @@ const fileHandle = () => {
     event.returnValue = imageDirBook;
   });
 
-  ipcMain.handle("set-cover", (event, cover, bookId) => {
+  ipcMain.handle("set-cover", async (event, cover, bookId) => {
     console.log("set-cover", cover, bookId);
     const coverPath = path.join(coverDir, `${bookId}.jpg`);
     try {
+      // 确保封面目录存在
+      await ensureDirectoryExists(coverDir);
       // 先尝试删除已存在的封面文件（如果有）
       try {
         fs.unlinkSync(coverPath);
@@ -81,7 +88,7 @@ const fileHandle = () => {
     const epubDirBook = path.join(epubDir, bookId);
     const imageDirBook = path.join(epubDirBook, "images");
     console.log("select-image", imageDirBook);
-    ensureDirectoryExists(imageDirBook);
+    await ensureDirectoryExists(imageDirBook);
 
     const timestamp = Date.now();
     //获取文件的扩展名

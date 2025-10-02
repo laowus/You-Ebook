@@ -15,6 +15,7 @@ const fs = require("fs");
 const AdmZip = require("adm-zip");
 const archiver = require("archiver"); // 需要安装: npm install archiver
 const unzipper = require("unzipper"); // 需要安装: npm install unzipper
+const bookDataDir = path.join(app.getPath("userData"), "bookdata");
 const epubDir = path.join(app.getPath("userData"), "bookdata", "epub");
 const Store = require("electron-store");
 const store = new Store();
@@ -26,6 +27,7 @@ const { initDatabase } = require("./dbtool");
 let resourcesRoot = path.resolve(app.getAppPath());
 let publicRoot = path.join(__dirname, "../../public");
 const dbHandle = require("./ipcHandlers/dbHandle");
+const { closeDatabase } = require("./dbtool");
 const fileHandle = require("./ipcHandlers/fileHandle");
 if (!isDevEnv) {
   resourcesRoot = path.dirname(resourcesRoot);
@@ -378,6 +380,25 @@ const txtToHtmlString = (txt, title) => {
 ipcMain.on("restart-app", () => {
   app.relaunch();
   app.exit();
+});
+
+ipcMain.on("clear-data", (event) => {
+  // 清除数据,删除
+  // 加入数据库有连接，则先关闭数据库连接
+  closeDatabase();
+
+  if (fs.existsSync(bookDataDir)) {
+    fs.rmSync(bookDataDir, { recursive: true, force: true });
+    event.sender.send("clear-data-reply", {
+      success: true,
+      message: "数据清除成功!",
+    });
+  } else {
+    event.sender.send("clear-data-reply", {
+      success: false,
+      message: "数据清除失败,请重试或者检查文件!",
+    });
+  }
 });
 
 ipcMain.on("export-html", async (event, { chapters, metaData }) => {

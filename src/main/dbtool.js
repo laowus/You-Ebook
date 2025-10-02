@@ -1,6 +1,7 @@
 const path = require("path");
 const { app, ipcMain } = require("electron");
 const fs = require("fs");
+const { get } = require("http");
 const sqlite3 = require("sqlite3").verbose();
 const bookData = path.join(app.getPath("userData"), "bookdata");
 
@@ -185,6 +186,7 @@ const updateBook = (book, event) => {
     }
   );
 };
+
 const delBook = (event, bookId) => {
   db.run(`UPDATE ee_book SET isDel = 1 WHERE id = ?`, [bookId], (err) => {
     if (err) {
@@ -318,6 +320,13 @@ const updateToc = (book, event) => {
   );
 };
 
+// 断开数据库连接
+const closeDatabase = () => {
+  if (db && db.open) {
+    db.close();
+  }
+};
+
 // 批量更新章节信息
 const batchUpdateChapters = (chapters, event) => {
   db.serialize(() => {
@@ -372,5 +381,6 @@ module.exports = {
   getChap,
   updateChapter,
   updateToc,
-  resetTables, // 导出重置表函数
+  resetTables,
+  closeDatabase, // 导出重置表函数
 };

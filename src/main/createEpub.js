@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const dataPath = path.join(app.getPath("userData"), "bookdata");
 const epubDir = path.join(dataPath, "epub");
+const coverDir = path.join(dataPath, "cover");
 const JSZip = require("jszip");
 const { getChap } = require("./dbtool");
 
@@ -16,7 +17,7 @@ const generateNavPoints = (chapters, parentPlayOrder = 1) => {
                   <navLabel>
                     <text>${chapter.label}</text>
                   </navLabel>
-                  <content src="./OEBPS/${id}.xhtml" />`;
+                  <content src="./OEBPS/${id}.html" />`;
     if (chapter.subitems && chapter.subitems.length > 0) {
       const subNavPoints = generateNavPoints(
         chapter.subitems,
@@ -70,17 +71,16 @@ const createEpub = async (chapters, metadata, mainWin) => {
             </container>`.trim()
       );
 
+      const coverPath = path.join(coverDir, `${bookId}.jpg`);
+      console.log("封面图片路径", coverPath);
+      const isCoverExists = fs.existsSync(coverPath);
       // 添加封面图片到 OEBPS 文件夹
-      if (cover) {
-        const fs = require("fs");
-        const coverData = fs.readFileSync(cover);
-        const coverFileName = "cover.jpg"; // 假设封面图片为 JPG 格式
-        zip.folder("OEBPS").file(coverFileName, coverData);
+      if (isCoverExists) {
+        zip.folder("OEBPS").file("cover.jpg", fs.readFileSync(coverPath));
       }
 
       //获取epub文件目录
       const imagesDir = path.join(epubDir, `${bookId}`, "images");
-      console.log("存放当前编辑epub的图片目录", imagesDir);
       // 检查图片目录是否存在且不为空
       if (fs.existsSync(imagesDir) && fs.readdirSync(imagesDir).length > 0) {
         // 获取imagesDir目录下的所有文件
@@ -147,15 +147,15 @@ const createEpub = async (chapters, metadata, mainWin) => {
       // 生成 manifest
       const manifestItems = flatChapters.map(
         (chapter, index) => `
-        <item id="chap${chapter.href}" href="OEBPS/chapter${chapter.href}.xhtml" media-type="application/xhtml+xml"/>
+        <item id="chap${chapter.href}" href="OEBPS/chapter${chapter.href}.html" media-type="application/xhtml+xml"/>
     `
       );
 
-      if (cover) {
+      if (isCoverExists) {
         const coverFileName = "cover.jpg";
         manifestItems.push(`
           <item id="cover-image" href="OEBPS/${coverFileName}" media-type="image/jpeg"/>
-          <item id="cover" href="OEBPS/cover.xhtml" media-type="application/xhtml+xml"/>
+          <item id="cover" href="OEBPS/cover.html" media-type="application/xhtml+xml"/>
         `);
       }
       // 添加图片到 manifest
@@ -175,17 +175,17 @@ const createEpub = async (chapters, metadata, mainWin) => {
         <itemref idref="chap${chapter.href}"/>`
       );
 
-      if (cover) {
+      if (isCoverExists) {
         spineItems.unshift(`<itemref idref="cover" linear="yes"/>`);
       }
 
       const spine = spineItems.join("").trim();
 
       // 生成封面页面
-      if (cover) {
+      if (isCoverExists) {
         const coverFileName = "cover.jpg";
         zip.folder("OEBPS").file(
-          "cover.xhtml",
+          "cover.html",
           `<?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
           <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
@@ -213,7 +213,7 @@ const createEpub = async (chapters, metadata, mainWin) => {
             mainWin.webContents.send("showtip", chapter.label);
           }
           zip.folder("OEBPS").file(
-            `chapter${chapter.href}.xhtml`,
+            `chapter${chapter.href}.html`,
             `<?xml version="1.0" encoding="UTF-8"?>
                 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
                 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
@@ -246,7 +246,11 @@ const createEpub = async (chapters, metadata, mainWin) => {
                 <dc:language>zh</dc:language>
                 <dc:creator>${author}</dc:creator>
                 <dc:identifier id="book-id">${new Date().getTime()}</dc:identifier>
-                ${cover ? '<meta name="cover" content="cover-image"/>' : ""}
+                ${
+                  isCoverExists
+                    ? '<meta name="cover" content="cover-image"/>'
+                    : ""
+                }
               </metadata>
               <manifest>
                 ${manifest}

@@ -9,41 +9,48 @@ const { metaData } = storeToRefs(useBookStore());
 const { editBookShow, editBookData } = storeToRefs(useAppStore());
 const { hideEditBook, showHistoryView } = useAppStore();
 
-const meta = ref({
-  title: "",
-  author: "",
-  description: "",
-  cover: "",
-  bookId: 0,
-});
+// const meta = ref({
+//   title: "",
+//   author: "",
+//   description: "",
+//   cover: "",
+//   bookId: 0,
+// });
 
 // 监听 editBookData 的变化，更新 meta 数据
 watch(editBookData, (newData) => {
   if (newData) {
-    meta.value = { ...newData };
+    console.log("editBookData changed:", newData);
+    // 从 editBookData 中提取封面路径
+    const coverPath = ipcRenderer.sendSync("get-cover-path", newData.id);
+    console.log("Fetched cover path:", coverPath);
+    // if (coverPath) {
+    //   meta.value.cover = coverPath;
+    // }
   }
 });
 
-// 监听 editBookShow 的变化，当窗口关闭时重置 meta
-watch(editBookShow, (newValue) => {
-  if (!newValue) {
-    meta.value = {
-      title: "",
-      author: "",
-      description: "",
-      cover: "",
-      bookId: 0,
-    };
-  }
-});
+// // 监听 editBookShow 的变化，当窗口关闭时重置 meta
+// watch(editBookShow, (newValue) => {
+//   if (!newValue) {
+//     meta.value = {
+//       title: "",
+//       author: "",
+//       description: "",
+//       cover: "",
+//       bookId: 0,
+//     };
+//   }
+// });
 
 // 处理文件选择事件
 const handleFileChange = (event) => {
   const file = event.target.files[0];
   if (file) {
     const filePath = webUtils.getPathForFile(file);
-    meta.value.cover = filePath;
-    console.log("meta", meta.value);
+
+    editBookData.value.cover = filePath;
+    console.log("Selected cover path:", editBookData.value);
   }
 };
 
@@ -59,15 +66,18 @@ const handleDoubleClick = () => {
 // 保存编辑后的书籍信息
 const saveEditBook = () => {
   // 这里添加保存书籍信息的逻辑
-  console.log("meta", meta.value);
-  if (meta.value.title && meta.value.author) {
+  if (editBookData.value.title && editBookData.value.author) {
     // 发送设置封面图片的事件
-    if (meta.value.cover) {
+    if (editBookData.value.cover) {
       ipcRenderer
-        .invoke("set-cover", meta.value.cover, meta.value.bookId)
+        .invoke(
+          "set-cover",
+          editBookData.value.cover,
+          editBookData.value.bookId
+        )
         .then((res) => {
           if (res.success) {
-            meta.value.cover = res.coverPath;
+            editBookData.value.cover = res.coverPath;
           } else {
             ElMessage.error("设置封面图片失败");
             return;
@@ -75,11 +85,9 @@ const saveEditBook = () => {
         });
     }
 
-    ipcRenderer.send("db-update-book", toRaw(meta.value));
+    ipcRenderer.send("db-update-book", toRaw(editBookData.value));
     ElMessage.success("书籍信息保存成功");
-    if (meta.value.bookId === metaData.value.bookId) {
-      metaData.value = meta.value;
-    }
+
     hideEditBook();
     showHistoryView();
   } else {
@@ -89,18 +97,18 @@ const saveEditBook = () => {
 </script>
 <template>
   <el-dialog v-model="editBookShow" title="'编辑书籍'" width="80%">
-    <el-form :model="meta" label-width="auto">
+    <el-form :model="editBookData" label-width="auto">
       <el-row>
         <el-col :span="11">
           <el-form-item label="书名:" prop="title" required>
-            <el-input v-model="meta.title" />
+            <el-input v-model="editBookData.title" />
           </el-form-item>
           <el-form-item label="作者:" prop="author" required>
-            <el-input v-model="meta.author" />
+            <el-input v-model="editBookData.author" />
           </el-form-item>
           <el-form-item label="简介:">
             <el-input
-              v-model="meta.description"
+              v-model="editBookData.description"
               style="width: 100%"
               :rows="6"
               type="textarea"
@@ -112,10 +120,12 @@ const saveEditBook = () => {
         <el-col :span="10">
           <el-form-item label="封面:" label-position="top" prop="cover">
             <div class="bordered-form-item" @dblclick="handleDoubleClick">
-              <span v-if="!meta.cover"> 双击插入封面图片(jpg, png) </span>
+              <span v-if="!editBookData.cover">
+                双击插入封面图片(jpg, png)
+              </span>
               <img
                 v-else
-                :src="meta.cover"
+                :src="editBookData.cover"
                 style="max-width: 100%; max-height: 100%"
               />
             </div>

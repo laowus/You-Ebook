@@ -1,10 +1,10 @@
 const { ipcMain } = require("electron");
+
 const {
   insertBook,
   getBooks,
   delBook,
   updateBook,
-  getBook,
   insertChapter,
   getFirstChapter,
   getChapter,
@@ -18,6 +18,7 @@ const dbHandle = () => {
   ipcMain.on("db-reset-tables", (event) => {
     resetTables(event); // 调用重置表函数
   });
+
   ipcMain.on("db-insert-book", (event, book) => {
     insertBook(book, event);
   });
@@ -27,6 +28,7 @@ const dbHandle = () => {
   ipcMain.on("db-update-book", (event, book) => {
     updateBook(book, event);
   });
+
   ipcMain.on("db-del-book", (event, bookId) => {
     delBook(event, bookId);
   });
@@ -52,7 +54,6 @@ const dbHandle = () => {
   ipcMain.on("db-update-chapter", (event, chapter) => {
     updateChapter(chapter, event);
   });
-
 };
 
 module.exports = dbHandle;

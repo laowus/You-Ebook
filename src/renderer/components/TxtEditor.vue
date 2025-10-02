@@ -287,7 +287,7 @@ const formattedContent = computed(() => {
         // 将路径中的"images"替换为imageDir变量
         // 替换 \ 为 /
         return line.replace(
-          /images\\/,
+          /images\//,
           `file:///${imageDir.replace(/\\/g, "/")}/`
         );
       }
@@ -338,7 +338,7 @@ const addImage = () => {
       const imgUrl = imagePath;
 
       // 创建图片标签
-      const imgTag = `<img src="images\\${imgUrl}">`;
+      const imgTag = `<img src="images/${imgUrl}" />`;
 
       const textarea = editArea.value;
       const { selectionStart, selectionEnd, value } = textarea;
