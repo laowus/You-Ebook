@@ -361,6 +361,7 @@ const exportEpub = async () => {
       ElMessage.error(res.message);
     }
   });
+  console.log("导出epub", toRaw(toc.value), toRaw(metaData.value));
   ipcRenderer.send("export-epub", {
     chapters: toRaw(toc.value),
     metaData: toRaw(metaData.value),

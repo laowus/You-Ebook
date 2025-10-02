@@ -63,17 +63,16 @@ const delBook = (row) => {
 };
 
 const editBook = (row) => {
-  console.log("编辑书籍信息=>", row);
-  const coverPath = ipcRenderer.sendSync("get-cover-path", row.id);
-  console.log("Fetched cover path for editing:", coverPath);
+  // 编辑书籍时，需要先获取书籍的封面图片
+  const coverPath = ipcRenderer.sendSync("get-cover-path", row.bookId);
   if (coverPath) {
-    row.cover = coverPath;
+    row.cover = `${coverPath}?t=${Date.now()}`;
   } else {
     row.cover = "";
   }
-  
-  setEditBookData(row); // 设置要编辑的书籍数据
-  hideHistoryView();
+  console.log("打开编辑书籍", row);
+  setEditBookData(row); // 获取点击后某个书籍的信息
+  hideHistoryView(); //隐藏list
   editBookShow.value = true; // 显示 EditBook 弹窗
 };
 

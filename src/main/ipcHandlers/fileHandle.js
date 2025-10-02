@@ -26,7 +26,12 @@ const fileHandle = () => {
 
   ipcMain.on("get-cover-path", (event, bookId) => {
     const coverPath = path.join(coverDir, `${bookId}.jpg`);
-    event.returnValue = coverPath;
+    //判断是否真实存在封面图片
+    if (fs.existsSync(coverPath)) {
+      event.returnValue = coverPath;
+    } else {
+      event.returnValue = "";
+    }
   });
 
   // 获取解压epub文件目录
@@ -46,7 +51,7 @@ const fileHandle = () => {
     ensureDirectoryExists(imageDirBook);
     event.returnValue = imageDirBook;
   });
-
+  // 设置封面图片 把图片复制到封面目录，并命名为 bookId.jpg
   ipcMain.handle("set-cover", async (event, cover, bookId) => {
     console.log("set-cover", cover, bookId);
     const coverPath = path.join(coverDir, `${bookId}.jpg`);

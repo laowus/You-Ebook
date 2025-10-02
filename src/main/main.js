@@ -210,7 +210,7 @@ ipcMain.on("export-epub", async (event, { chapters, metaData }) => {
     // 弹出保存对话框
     const { filePath } = await dialog.showSaveDialog({
       title: "保存 EPUB 文件",
-      defaultPath: `${metaData.title}.epub`,
+      defaultPath: `${metaData.author} - ${metaData.title}.epub`,
       filters: [
         { name: "EPUB 文件", extensions: ["epub"] },
         { name: "所有文件", extensions: ["*"] },

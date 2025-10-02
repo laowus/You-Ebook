@@ -6,51 +6,32 @@ import { useBookStore } from "../store/bookStore";
 import { ElMessage } from "element-plus";
 const { ipcRenderer, webUtils } = window.require("electron");
 const { metaData } = storeToRefs(useBookStore());
+const { setMetaData } = useBookStore();
 const { editBookShow, editBookData } = storeToRefs(useAppStore());
 const { hideEditBook, showHistoryView } = useAppStore();
-
-// const meta = ref({
-//   title: "",
-//   author: "",
-//   description: "",
-//   cover: "",
-//   bookId: 0,
-// });
-
-// 监听 editBookData 的变化，更新 meta 数据
-watch(editBookData, (newData) => {
-  if (newData) {
-    console.log("editBookData changed:", newData);
-    // 从 editBookData 中提取封面路径
-    const coverPath = ipcRenderer.sendSync("get-cover-path", newData.id);
-    console.log("Fetched cover path:", coverPath);
-    // if (coverPath) {
-    //   meta.value.cover = coverPath;
-    // }
-  }
-});
-
-// // 监听 editBookShow 的变化，当窗口关闭时重置 meta
-// watch(editBookShow, (newValue) => {
-//   if (!newValue) {
-//     meta.value = {
-//       title: "",
-//       author: "",
-//       description: "",
-//       cover: "",
-//       bookId: 0,
-//     };
-//   }
-// });
 
 // 处理文件选择事件
 const handleFileChange = (event) => {
   const file = event.target.files[0];
   if (file) {
     const filePath = webUtils.getPathForFile(file);
-
-    editBookData.value.cover = filePath;
-    console.log("Selected cover path:", editBookData.value);
+    // 点击之后 直接更新封面图片
+    ipcRenderer
+      .invoke("set-cover", filePath, editBookData.value.bookId)
+      .then((res) => {
+        if (res.success) {
+          //重新去获取封面图片
+          const coverPath = ipcRenderer.sendSync(
+            "get-cover-path",
+            editBookData.value.bookId
+          );
+          editBookData.value.cover = `${coverPath}?t=${Date.now()}`;
+          ElMessage.success("封面图片设置成功");
+        } else {
+          ElMessage.error("设置封面图片失败");
+          return;
+        }
+      });
   }
 };
 
@@ -67,29 +48,21 @@ const handleDoubleClick = () => {
 const saveEditBook = () => {
   // 这里添加保存书籍信息的逻辑
   if (editBookData.value.title && editBookData.value.author) {
-    // 发送设置封面图片的事件
-    if (editBookData.value.cover) {
-      ipcRenderer
-        .invoke(
-          "set-cover",
-          editBookData.value.cover,
-          editBookData.value.bookId
-        )
-        .then((res) => {
-          if (res.success) {
-            editBookData.value.cover = res.coverPath;
-          } else {
-            ElMessage.error("设置封面图片失败");
-            return;
-          }
-        });
-    }
+    // 更新title author description 三个就可以了
+    ipcRenderer.once("db-update-book-response", (event, res) => {
+      if (res.success) {
+        ElMessage.success("书籍信息保存成功");
+        if (metaData.value) {
+          setMetaData(editBookData.value);
+        }
+        hideEditBook();
+        showHistoryView();
+      } else {
+        ElMessage.error("书籍信息保存失败");
+      }
+    });
 
     ipcRenderer.send("db-update-book", toRaw(editBookData.value));
-    ElMessage.success("书籍信息保存成功");
-
-    hideEditBook();
-    showHistoryView();
   } else {
     ElMessage.error("请输入完整的书籍信息");
   }

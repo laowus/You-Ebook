@@ -120,7 +120,6 @@ const createTable = () => {
             title TEXT,
             author TEXT,
             description TEXT,
-            cover TEXT,
             toc TEXT,
             isDel INTEGER,
             createTime TEXT,
@@ -154,9 +153,9 @@ const createTable = () => {
 
 const insertBook = (book, event) => {
   db.run(
-    ` INSERT INTO ee_book (title, author, description, cover, isDel, createTime, updateTime)
-     VALUES (? , ?, ?, ?, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))`,
-    [book.title, book.author, book.description, book.cover],
+    ` INSERT INTO ee_book (title, author, description,isDel, createTime, updateTime)
+     VALUES (? , ?, ?, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))`,
+    [book.title, book.author, book.description],
     function (err) {
       if (err) {
         console.error(err.message);
@@ -174,8 +173,8 @@ const insertBook = (book, event) => {
 const updateBook = (book, event) => {
   console.log(book);
   db.run(
-    `UPDATE ee_book SET title = ?, author = ?, description = ?, cover = ?, updateTime = datetime('now', 'localtime') WHERE id = ?`,
-    [book.title, book.author, book.description, book.cover, book.bookId],
+    `UPDATE ee_book SET title = ?, author = ?, description = ?,  updateTime = datetime('now', 'localtime') WHERE id = ?`,
+    [book.title, book.author, book.description, book.bookId],
     function (err) {
       if (err) {
         console.error(err.message);

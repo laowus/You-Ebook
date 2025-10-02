@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import EventBus from "../common/EventBus";
-import { selectEmits } from "element-plus";
 const { ipcRenderer } = window.require("electron");
 export const useBookStore = defineStore("bookStore", {
   state: () => ({
